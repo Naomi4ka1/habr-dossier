@@ -1045,9 +1045,6 @@
         box-shadow: 0 0 40px rgba(122, 30, 30, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.6);
         outline: none;
     }
-    .briefing-box video::backdrop {
-        background: #000;
-    }
 
     @media (max-width: 820px) {
         .shell { padding: 60px 12px 40px; }
@@ -1830,11 +1827,16 @@
 </div>
 
 <!-- ================= BRIEFING VIDEO MODAL ================= -->
+<!-- 
+    ВАЖНО: атрибут autoplay УДАЛЁН. Видео НЕ будет воспроизводиться автоматически при загрузке страницы.
+    Воспроизведение запускается только через функцию playBriefing() по клику на кнопку.
+    preload="metadata" — подгружает только метаданные (длительность, размер), не сам поток.
+-->
 <div class="modal" id="briefingModal">
     <div class="modal-box briefing-box">
         <button class="modal-x" onclick="closeBriefing()">✕</button>
         <h2 style="margin-bottom: 20px;">◆ ВОСПРОИЗВЕДЕНИЕ БРИФИНГА</h2>
-        <video id="briefingVideo" controls autoplay playsinline>
+        <video id="briefingVideo" controls playsinline preload="metadata">
             <source src="How to stop an ADLR attack_1080p.mp4" type="video/mp4">
             Ваш браузер не поддерживает встроенное видео.
         </video>
@@ -2732,6 +2734,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    /* ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: гарантированно останавливаем видео при загрузке страницы */
+    const vid = document.getElementById('briefingVideo');
+    if (vid) {
+        try {
+            vid.pause();
+            vid.currentTime = 0;
+        } catch (e) {}
+    }
 });
 </script>
 </body>
