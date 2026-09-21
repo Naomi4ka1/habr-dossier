@@ -262,6 +262,8 @@
         display: flex; align-items: center; gap: 10px;
         font-size: 0.78em; letter-spacing: 0.2em; color: var(--bone-dim);
         white-space: nowrap; text-transform: uppercase;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
     .led {
         width: 9px; height: 9px; border-radius: 50%; background: var(--green);
@@ -270,6 +272,133 @@
     .led.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
     .led.red { background: var(--rust-bright); box-shadow: 0 0 8px var(--rust-bright); animation-duration: 1s; }
     @keyframes led { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ---------- РЕГУЛЯТОР ГРОМКОСТИ ---------- */
+    .vol-ctrl {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        padding: 5px 10px;
+        border: 1px solid var(--line-amber);
+        background: rgba(0, 0, 0, 0.45);
+        position: relative;
+        transition: all 0.25s;
+        user-select: none;
+    }
+    .vol-ctrl::before, .vol-ctrl::after {
+        content: '';
+        position: absolute;
+        width: 6px; height: 6px;
+        border: 1px solid var(--amber);
+        transition: all 0.25s;
+    }
+    .vol-ctrl::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .vol-ctrl::after  { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+    .vol-ctrl:hover {
+        border-color: var(--amber);
+        box-shadow: 0 0 15px rgba(200, 145, 44, 0.15);
+    }
+    .vol-ctrl:hover::before,
+    .vol-ctrl:hover::after {
+        border-color: var(--amber);
+        box-shadow: 0 0 8px var(--amber-glow);
+    }
+
+    .vol-icon {
+        color: var(--amber);
+        font-size: 1.05em;
+        line-height: 1;
+        text-shadow: 0 0 6px var(--amber-glow);
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 2px;
+        user-select: none;
+    }
+    .vol-icon:hover {
+        transform: scale(1.15);
+        text-shadow: 0 0 12px var(--amber-glow);
+    }
+    .vol-icon.muted {
+        color: var(--bone-dark);
+        text-shadow: none;
+        opacity: 0.6;
+    }
+    .vol-icon.muted:hover {
+        color: var(--rust-bright);
+        opacity: 1;
+    }
+
+    .vol-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 90px;
+        height: 5px;
+        background: linear-gradient(
+            90deg,
+            var(--amber) 0%,
+            var(--amber) var(--vol-pct, 80%),
+            rgba(216, 208, 190, 0.08) var(--vol-pct, 80%),
+            rgba(216, 208, 190, 0.08) 100%
+        );
+        border: 1px solid var(--line-amber);
+        outline: none;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+    }
+    .vol-slider:hover {
+        border-color: var(--amber);
+        box-shadow: 0 0 8px var(--amber-glow);
+    }
+
+    .vol-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 13px;
+        height: 13px;
+        background: var(--bg-deep);
+        border: 1px solid var(--amber);
+        box-shadow: 0 0 8px var(--amber-glow), inset 0 0 3px rgba(200, 145, 44, 0.6);
+        cursor: pointer;
+        transition: all 0.2s;
+        transform: rotate(45deg);
+    }
+    .vol-slider::-webkit-slider-thumb:hover {
+        background: var(--amber);
+        box-shadow: 0 0 14px var(--amber-glow), inset 0 0 4px rgba(0,0,0,0.4);
+        transform: rotate(45deg) scale(1.15);
+    }
+
+    .vol-slider::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        background: var(--bg-deep);
+        border: 1px solid var(--amber);
+        box-shadow: 0 0 8px var(--amber-glow), inset 0 0 3px rgba(200, 145, 44, 0.6);
+        cursor: pointer;
+        transition: all 0.2s;
+        transform: rotate(45deg);
+    }
+    .vol-slider::-moz-range-thumb:hover {
+        background: var(--amber);
+        box-shadow: 0 0 14px var(--amber-glow);
+    }
+
+    .vol-val {
+        color: var(--amber);
+        font-size: 0.72em;
+        letter-spacing: 0.12em;
+        min-width: 26px;
+        text-align: right;
+        text-shadow: 0 0 4px var(--amber-glow);
+        font-family: 'VT323', monospace;
+        font-size: 1em;
+    }
+    .vol-val.muted {
+        color: var(--bone-dark);
+        text-shadow: none;
+    }
 
     .tab-rack { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 26px; }
     .tab {
@@ -915,6 +1044,8 @@
         .modal-box { padding: 22px 18px; }
         .boot-frame { padding: 30px 22px; }
         .boot-title { font-size: 1.9em; }
+        .vol-ctrl { margin-left: 0; }
+        .vol-slider { width: 70px; }
     }
 </style>
 </head>
@@ -1000,6 +1131,15 @@
             <button class="btn small amber" onclick="openConsole()" style="margin-left: 10px;">
                 ⌬ KONSOLE
             </button>
+
+            <!-- РЕГУЛЯТОР ГРОМКОСТИ -->
+            <div class="vol-ctrl" title="Громкость музыки">
+                <span class="vol-icon" id="volIcon" onclick="toggleMute()">♪</span>
+                <input type="range" id="volumeSlider" min="0" max="100" step="1" value="80"
+                       class="vol-slider" oninput="onVolumeChange(this.value)"
+                       style="--vol-pct: 80%;">
+                <span class="vol-val" id="volVal">80</span>
+            </div>
         </div>
     </div>
 
@@ -1707,6 +1847,10 @@ let psychUnlocked = false;
 let combatReadyActive = false;
 let musicStarted = false;
 
+/* Громкость */
+let bgVolume = 0.8;   // 0.0 … 1.0
+let bgMuted = false;
+
 const locationsPool = [
     { obj: "ERES-427", sec: "ROTFRONT · Корпус-6", status: "Профилактический обход" },
     { obj: "ERES-427", sec: "ROTFRONT · Лазарет A", status: "Плановый осмотр" },
@@ -1783,6 +1927,49 @@ function playFileOpenSound() {
 }
 
 /* ============================================================
+   РЕГУЛЯТОР ГРОМКОСТИ
+============================================================ */
+function applyVolumeUI() {
+    const slider = document.getElementById('volumeSlider');
+    const volVal = document.getElementById('volVal');
+    const volIcon = document.getElementById('volIcon');
+
+    const pct = Math.round(bgVolume * 100);
+
+    if (slider) {
+        slider.value = pct;
+        slider.style.setProperty('--vol-pct', pct + '%');
+    }
+    if (volVal) {
+        volVal.textContent = bgMuted ? '0' : pct;
+        volVal.classList.toggle('muted', bgMuted || pct === 0);
+    }
+    if (volIcon) {
+        volIcon.classList.toggle('muted', bgMuted || pct === 0);
+    }
+}
+
+function applyVolumeToAudio() {
+    const audio = document.getElementById('bgMusic');
+    if (audio) {
+        audio.volume = bgMuted ? 0 : bgVolume;
+    }
+}
+
+function onVolumeChange(val) {
+    bgVolume = Math.max(0, Math.min(1, val / 100));
+    if (bgVolume > 0) bgMuted = false;
+    applyVolumeToAudio();
+    applyVolumeUI();
+}
+
+function toggleMute() {
+    bgMuted = !bgMuted;
+    applyVolumeToAudio();
+    applyVolumeUI();
+}
+
+/* ============================================================
    ФОНОВАЯ МУЗЫКА
 ============================================================ */
 function startBgMusic() {
@@ -1792,7 +1979,7 @@ function startBgMusic() {
     const audio = document.getElementById('bgMusic');
     if (!audio) return;
 
-    audio.volume = 0.8;
+    applyVolumeToAudio();
 
     const tryPlay = audio.play();
     if (tryPlay && typeof tryPlay.then === 'function') {
@@ -2446,6 +2633,22 @@ document.addEventListener('DOMContentLoaded', () => {
         s.addEventListener('keydown', e => e.preventDefault());
         s.addEventListener('click', e => e.preventDefault());
     });
+
+    /* Инициализация регулятора громкости */
+    applyVolumeUI();
+
+    /* Колесо мыши над слайдером = плавное изменение громкости */
+    const slider = document.getElementById('volumeSlider');
+    if (slider) {
+        slider.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 5 : -5;
+            let newVal = parseInt(slider.value) + delta;
+            newVal = Math.max(0, Math.min(100, newVal));
+            slider.value = newVal;
+            onVolumeChange(newVal);
+        }, { passive: false });
+    }
 });
 </script>
 </body>
