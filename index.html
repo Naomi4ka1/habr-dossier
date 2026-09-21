@@ -1,0 +1,2452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EINHEIT HABR-RF5-112 :: AKTE // AEON PROTEKTORAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Major+Mono+Display&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-deep:    #080605;
+        --bg-mid:     #100d0a;
+        --bg-light:   #181410;
+        --panel:      #14110d;
+        --panel-hi:   #1c1813;
+        --bone:       #d8d0be;
+        --bone-dim:   #9a9384;
+        --bone-dark:  #5c564c;
+        --rust:       #7a1e1e;
+        --rust-bright:#a82a2a;
+        --rust-deep:  #3a0d0d;
+        --amber:      #c8912c;
+        --amber-dim:  #7a5a18;
+        --amber-glow: rgba(200, 145, 44, 0.25);
+        --medical:    #a8b4a8;
+        --green:      #6d8a5e;
+        --green-dim:  #3d4a34;
+        --warning:    #b8860b;
+        --danger:     #a82a2a;
+        --line:       rgba(216, 208, 190, 0.12);
+        --line-red:   rgba(168, 42, 42, 0.45);
+        --line-amber: rgba(200, 145, 44, 0.35);
+        --scan:       rgba(216, 208, 190, 0.025);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; background: var(--bg-deep); }
+
+    body {
+        font-family: 'Share Tech Mono', 'Syne Mono', 'Courier New', monospace;
+        color: var(--bone);
+        background: 
+            linear-gradient(rgba(8, 6, 5, 0.72), rgba(8, 6, 5, 0.85)),
+            url('stirb-bg.jpg') center/cover fixed no-repeat;
+        overflow-x: hidden;
+        position: relative;
+        letter-spacing: 0.05em;
+        line-height: 1.5;
+        cursor: crosshair;
+        font-weight: 400;
+        text-rendering: geometricPrecision;
+    }
+
+    #gifTransition {
+        position: fixed;
+        inset: 0;
+        z-index: 50000;
+        background: #000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+    }
+    #gifTransition.on { display: flex; }
+    #gifTransition img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .crt-scan {
+        position: fixed; inset: 0;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px, var(--scan) 2px, var(--scan) 3px);
+        pointer-events: none; z-index: 9998; mix-blend-mode: overlay;
+        animation: scanShift 8s linear infinite;
+    }
+    @keyframes scanShift { 0% { background-position: 0 0; } 100% { background-position: 0 100px; } }
+
+    .crt-vignette {
+        position: fixed; inset: 0;
+        background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 75%, rgba(0,0,0,0.75) 100%);
+        pointer-events: none; z-index: 9997;
+    }
+    .crt-flicker {
+        position: fixed; inset: 0; background: rgba(216, 208, 190, 0.02);
+        pointer-events: none; z-index: 9996; animation: flicker 4s steps(1) infinite;
+    }
+    @keyframes flicker { 0%, 91%, 93%, 95%, 100% { opacity: 0; } 92%, 94% { opacity: 1; } }
+
+    .noise {
+        position: fixed; inset: 0; pointer-events: none; z-index: 9995; opacity: 0.06;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+        animation: noiseShift 0.4s steps(4) infinite;
+    }
+    @keyframes noiseShift {
+        0% { transform: translate(0,0); } 25% { transform: translate(-3px,2px); }
+        50% { transform: translate(2px,-3px); } 75% { transform: translate(-1px,-1px); }
+        100% { transform: translate(0,0); }
+    }
+
+    .glitch-flash {
+        position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+        background: rgba(168, 42, 42, 0.15); opacity: 0;
+    }
+    .glitch-flash.active { animation: glitchFlash 0.18s ease-out; }
+    @keyframes glitchFlash { 0% { opacity: 0; } 40% { opacity: 0.55; } 100% { opacity: 0; } }
+
+    .shake { animation: shake 0.14s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake {
+        10%, 90% { transform: translate3d(-1px,0,0); }
+        20%, 80% { transform: translate3d(2px,0,0); }
+        30%, 50%, 70% { transform: translate3d(-3px,0,0); }
+        40%, 60% { transform: translate3d(3px,0,0); }
+    }
+
+    .phos { text-shadow: 0 0 4px rgba(216, 208, 190, 0.35), 0 0 12px rgba(200, 145, 44, 0.15); }
+
+    .corner-mark {
+        position: fixed; color: var(--bone-dark); font-size: 0.72em;
+        letter-spacing: 0.3em; z-index: 100; pointer-events: none;
+        text-transform: uppercase;
+    }
+    .corner-mark.tl { top: 10px; left: 14px; }
+    .corner-mark.tr { top: 10px; right: 14px; }
+    .corner-mark.bl { bottom: 10px; left: 14px; }
+    .corner-mark.br { bottom: 10px; right: 14px; }
+    .corner-mark span { color: var(--rust-bright); }
+
+    .boot-screen {
+        position: fixed; inset: 0;
+        background: radial-gradient(ellipse at center, #0d0a08 0%, #050403 100%);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 20000; flex-direction: column; padding: 20px;
+    }
+    .boot-screen.hidden { display: none; }
+
+    .boot-frame {
+        border: 1px solid var(--line-red);
+        background: rgba(10, 8, 6, 0.75);
+        padding: 40px 50px; max-width: 640px; width: 100%;
+        position: relative;
+        box-shadow: inset 0 0 40px rgba(122, 30, 30, 0.1), 0 0 60px rgba(122, 30, 30, 0.15);
+    }
+    .boot-frame::before, .boot-frame::after {
+        content: ''; position: absolute; width: 14px; height: 14px; border: 1px solid var(--amber);
+    }
+    .boot-frame::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .boot-frame::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+    .boot-title {
+        font-family: 'Major Mono Display', 'VT323', monospace;
+        font-size: 2.4em; letter-spacing: 0.08em;
+        color: var(--amber); text-shadow: 0 0 8px var(--amber-glow), 0 0 20px rgba(200, 145, 44, 0.15);
+        text-align: center; margin: 0 0 6px; text-transform: uppercase;
+    }
+    .boot-sub {
+        text-align: center; color: var(--bone-dim); font-size: 0.85em;
+        letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 30px;
+    }
+    .boot-line { color: var(--bone-dim); font-size: 0.85em; margin: 6px 0; letter-spacing: 0.1em; }
+    .boot-line .val { color: var(--bone); }
+    .boot-line .ok { color: var(--green); }
+    .boot-line .warn { color: var(--amber); }
+    .boot-line .err { color: var(--rust-bright); }
+
+    .pw-input {
+        width: 100%; padding: 14px 16px; background: rgba(0,0,0,0.55);
+        border: 1px solid var(--line-red); color: var(--amber);
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.05em; letter-spacing: 0.3em; text-align: center; outline: none;
+        transition: all 0.25s; caret-color: var(--amber); margin-top: 26px;
+    }
+    .pw-input:focus {
+        border-color: var(--amber);
+        box-shadow: 0 0 20px var(--amber-glow), inset 0 0 12px rgba(200, 145, 44, 0.05);
+    }
+    .pw-input::placeholder { color: var(--bone-dark); letter-spacing: 0.15em; }
+
+    .pw-hint {
+        font-size: 0.78em; color: var(--bone-dark); text-align: center;
+        margin-top: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+    }
+
+    .boot-warn {
+        color: var(--rust-bright); text-align: center; margin-top: 14px;
+        min-height: 20px; font-size: 0.85em; letter-spacing: 0.2em;
+        opacity: 0; transition: opacity 0.25s; text-shadow: 0 0 6px rgba(168, 42, 42, 0.6);
+        text-transform: uppercase;
+    }
+    .boot-warn.on { opacity: 1; }
+
+    .char-float {
+        position: fixed; color: var(--rust-bright); font-size: 1.3em;
+        pointer-events: none; z-index: 20010;
+        text-shadow: 0 0 8px rgba(168, 42, 42, 0.7);
+        animation: charFloat 0.9s ease-out forwards;
+    }
+    @keyframes charFloat {
+        0% { opacity: 1; transform: translateY(0) scale(1); }
+        100% { opacity: 0; transform: translateY(-45px) scale(1.4); }
+    }
+
+    .shell {
+        max-width: 1240px; margin: 0 auto; padding: 70px 24px 60px;
+        opacity: 0; transform: translateY(14px);
+        transition: opacity 1s, transform 1s; position: relative; z-index: 1;
+    }
+    .shell.visible { opacity: 1; transform: translateY(0); }
+
+    .ident {
+        display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+        gap: 20px; padding: 14px 18px; border: 1px solid var(--line-red);
+        background: linear-gradient(180deg, rgba(24,20,16,0.85), rgba(12,10,8,0.9));
+        position: relative; margin-bottom: 30px;
+    }
+    .ident::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+        background: var(--rust-bright); box-shadow: 0 0 12px rgba(168, 42, 42, 0.6);
+    }
+    .ident-sigil {
+        display: flex; align-items: center; gap: 12px;
+        cursor: pointer; transition: opacity 0.25s;
+    }
+    .ident-sigil:hover { opacity: 0.75; }
+
+    .sigil-mark {
+        width: 42px; height: 42px; border: 1px solid var(--amber);
+        position: relative; display: flex; align-items: center; justify-content: center;
+        color: var(--amber); font-family: 'VT323', monospace; font-size: 1.6em;
+        text-shadow: 0 0 8px var(--amber-glow);
+    }
+    .sigil-mark::before, .sigil-mark::after {
+        content: ''; position: absolute; width: 4px; height: 4px; background: var(--amber);
+    }
+    .sigil-mark::before { top: -2px; left: -2px; }
+    .sigil-mark::after { bottom: -2px; right: -2px; }
+
+    .sigil-text {
+        font-size: 0.72em; letter-spacing: 0.3em; color: var(--bone-dim); line-height: 1.4;
+        text-transform: uppercase;
+    }
+    .sigil-text strong {
+        display: block; color: var(--bone); letter-spacing: 0.2em; font-size: 1.1em;
+    }
+
+    .ident-main {
+        text-align: center; font-size: 0.85em; letter-spacing: 0.22em; color: var(--bone-dim);
+        text-transform: uppercase;
+    }
+    .ident-main .unit {
+        color: var(--amber); font-size: 1.25em; letter-spacing: 0.3em;
+        display: block; margin-bottom: 4px; text-shadow: 0 0 6px var(--amber-glow);
+        font-family: 'Major Mono Display', 'VT323', monospace;
+    }
+    .ident-main .serial { color: var(--rust-bright); font-size: 0.82em; }
+
+    .ident-state {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 0.78em; letter-spacing: 0.2em; color: var(--bone-dim);
+        white-space: nowrap; text-transform: uppercase;
+    }
+    .led {
+        width: 9px; height: 9px; border-radius: 50%; background: var(--green);
+        box-shadow: 0 0 8px var(--green); animation: led 2.2s ease-in-out infinite;
+    }
+    .led.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .led.red { background: var(--rust-bright); box-shadow: 0 0 8px var(--rust-bright); animation-duration: 1s; }
+    @keyframes led { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .tab-rack { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 26px; }
+    .tab {
+        flex: 1 1 auto; min-width: 130px; padding: 12px 16px;
+        background: transparent; border: 1px solid var(--line); color: var(--bone-dim);
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.82em; letter-spacing: 0.22em;
+        text-transform: uppercase; cursor: pointer; transition: all 0.22s;
+        position: relative; overflow: hidden;
+    }
+    .tab::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+        background: rgba(168, 42, 42, 0.15); transition: width 0.3s;
+    }
+    .tab:hover { color: var(--bone); border-color: var(--line-red); }
+    .tab:hover::before { width: 100%; }
+    .tab.active {
+        color: var(--amber); border-color: var(--amber);
+        background: rgba(200, 145, 44, 0.06); text-shadow: 0 0 6px var(--amber-glow);
+    }
+    .tab.active::after {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+        background: var(--amber); box-shadow: 0 0 10px var(--amber-glow);
+    }
+
+    .section {
+        display: none; border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(20,17,13,0.7), rgba(12,10,8,0.85));
+        padding: 30px 32px; margin-bottom: 30px;
+        position: relative; min-height: 480px;
+        animation: sectionIn 0.5s ease-out;
+    }
+    .section::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, var(--rust-bright), transparent);
+        opacity: 0.5;
+    }
+    @keyframes sectionIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .section.active { display: block; }
+
+    .sec-title {
+        font-family: 'Major Mono Display', 'VT323', monospace;
+        font-size: 1.7em; letter-spacing: 0.08em;
+        color: var(--bone); margin: 0 0 6px; padding-bottom: 12px;
+        border-bottom: 1px solid var(--line-red);
+        text-shadow: 0 0 4px rgba(216,208,190,0.2);
+        text-transform: uppercase;
+    }
+    .sec-title .deco { color: var(--amber); margin-right: 10px; font-size: 0.9em; }
+    .sec-sub {
+        color: var(--bone-dim); font-size: 0.78em; letter-spacing: 0.3em;
+        text-transform: uppercase; margin-bottom: 24px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+
+    .panel {
+        border: 1px solid var(--line); background: rgba(16, 13, 10, 0.6);
+        padding: 20px; position: relative;
+    }
+    .panel::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 10px;
+        border-top: 1px solid var(--amber); border-left: 1px solid var(--amber);
+    }
+    .panel h3, .panel h4 {
+        font-family: 'VT323', monospace; color: var(--amber);
+        letter-spacing: 0.15em; margin-top: 0; font-size: 1.25em;
+        text-shadow: 0 0 5px var(--amber-glow); text-transform: uppercase;
+    }
+    .panel p, .panel li { color: var(--bone-dim); font-size: 0.9em; margin: 6px 0; letter-spacing: 0.04em; }
+    .panel strong { color: var(--bone); font-weight: normal; letter-spacing: 0.08em; }
+    .panel ul { padding-left: 18px; margin: 10px 0; }
+
+    .photo-frame {
+        border: 1px solid var(--line-red);
+        background: repeating-linear-gradient(45deg, rgba(20,17,13,0.6) 0 12px, rgba(16,13,10,0.6) 12px 24px);
+        aspect-ratio: 3/4; max-width: 220px; margin: 0 auto 18px;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 10px; position: relative; padding: 16px;
+        overflow: hidden;
+    }
+    .photo-frame::before, .photo-frame::after {
+        content: ''; position: absolute; width: 14px; height: 14px; border: 1px solid var(--amber);
+        z-index: 2;
+    }
+    .photo-frame::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+    .photo-frame::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+    
+    .photo-frame img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+        filter: sepia(0.4) contrast(1.15) brightness(0.85);
+        z-index: 1;
+    }
+
+    .photo-caption {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        background: rgba(8, 6, 5, 0.85);
+        padding: 8px 10px;
+        font-size: 0.7em; letter-spacing: 0.25em; color: var(--bone-dark);
+        text-transform: uppercase; text-align: center;
+        z-index: 3;
+        border-top: 1px solid var(--line-red);
+    }
+    .photo-caption strong { color: var(--amber); display: block; margin-bottom: 3px; }
+
+    .stat {
+        border: 1px solid var(--line); background: rgba(16, 13, 10, 0.7);
+        padding: 18px 16px; text-align: center; cursor: pointer;
+        transition: all 0.25s; position: relative;
+    }
+    .stat:hover {
+        border-color: var(--amber); background: rgba(200, 145, 44, 0.05);
+        transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .stat-label {
+        font-size: 0.72em; letter-spacing: 0.25em; text-transform: uppercase;
+        color: var(--bone-dim); margin-bottom: 10px;
+    }
+    .stat-val {
+        font-family: 'VT323', monospace; font-size: 2.4em; color: var(--amber);
+        letter-spacing: 0.05em; text-shadow: 0 0 8px var(--amber-glow);
+        transition: all 0.25s; line-height: 1;
+    }
+    .stat:hover .stat-val { color: var(--rust-bright); text-shadow: 0 0 10px rgba(168,42,42,0.5); }
+    .stat-desc {
+        font-size: 0.72em; color: var(--bone-dark); letter-spacing: 0.2em;
+        margin-top: 8px; text-transform: uppercase;
+    }
+
+    .btn {
+        background: transparent; border: 1px solid var(--rust); color: var(--bone);
+        padding: 10px 20px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.82em; letter-spacing: 0.22em;
+        text-transform: uppercase; cursor: pointer;
+        transition: all 0.22s; position: relative; overflow: hidden;
+    }
+    .btn::after {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(168,42,42,0.25), transparent);
+        transform: translateX(-100%); transition: transform 0.5s;
+    }
+    .btn:hover {
+        border-color: var(--amber); color: var(--amber);
+        box-shadow: 0 0 20px rgba(200,145,44,0.15), inset 0 0 12px rgba(200,145,44,0.05);
+    }
+    .btn:hover::after { transform: translateX(100%); }
+    .btn.amber { border-color: var(--amber-dim); color: var(--amber); }
+    .btn.amber:hover { border-color: var(--amber); box-shadow: 0 0 20px var(--amber-glow); }
+    .btn.red { border-color: var(--rust-bright); color: var(--rust-bright); }
+    .btn.red:hover { background: rgba(168,42,42,0.1); box-shadow: 0 0 20px rgba(168,42,42,0.35); }
+    .btn.small { padding: 7px 14px; font-size: 0.75em; }
+    .btn.locked { border-color: var(--bone-dark); color: var(--bone-dark); }
+    .btn.locked:hover { border-color: var(--amber-dim); color: var(--amber); }
+
+    .stat-line {
+        display: flex; justify-content: space-between; padding: 10px 0;
+        border-bottom: 1px dashed var(--line); font-size: 0.88em;
+    }
+    .stat-line:last-child { border-bottom: none; }
+    .stat-line .k { color: var(--bone-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+    .stat-line .v { color: var(--bone); letter-spacing: 0.05em; }
+    .stat-line .v.amber { color: var(--amber); }
+    .stat-line .v.red { color: var(--rust-bright); }
+    .stat-line .v.green { color: var(--green); }
+    .stat-line .v.warn { color: var(--warning); }
+
+    .metric { margin: 12px 0; }
+    .metric .mrow {
+        display: flex; justify-content: space-between; font-size: 0.82em; margin-bottom: 4px;
+        letter-spacing: 0.1em;
+    }
+    .metric .mrow .k { color: var(--bone-dim); }
+    .metric .mrow .v { color: var(--amber); }
+    .metric .mbar { height: 6px; background: rgba(216,208,190,0.06); overflow: hidden; }
+    .metric .mbar > i {
+        display: block; height: 100%;
+        background: linear-gradient(90deg, var(--rust), var(--amber));
+        box-shadow: 0 0 8px var(--amber-glow); transition: width 1s;
+    }
+
+    .vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+    .vital {
+        border: 1px solid var(--line-amber); padding: 12px; text-align: center;
+        background: rgba(200,145,44,0.03);
+    }
+    .vital .vlbl { color: var(--bone-dim); font-size: 0.7em; letter-spacing: 0.18em; text-transform: uppercase; }
+    .vital .vval {
+        font-family: 'VT323', monospace; font-size: 1.7em; color: var(--amber);
+        text-shadow: 0 0 8px var(--amber-glow); margin: 4px 0; line-height: 1;
+    }
+    .vital .vunit { color: var(--bone-dark); font-size: 0.7em; letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .mission-row {
+        border: 1px solid var(--line); background: rgba(200,145,44,0.03);
+        padding: 12px; margin-bottom: 10px;
+    }
+    .mission-row .mt {
+        color: var(--amber); font-size: 0.95em; letter-spacing: 0.12em;
+        margin-bottom: 6px; text-transform: uppercase;
+        font-family: 'VT323', monospace;
+    }
+    .mission-row .mp { height: 5px; background: rgba(216,208,190,0.06); margin-top: 6px; }
+    .mission-row .mp > i { display: block; height: 100%; background: linear-gradient(90deg, var(--rust), var(--amber)); }
+    .mission-row .row {
+        display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85em;
+    }
+    .mission-row .row .lbl { color: var(--bone-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+    .mission-row .row .val { color: var(--bone); }
+    .mission-row .row .val.red { color: var(--rust-bright); }
+    .mission-row .row .val.warn { color: var(--warning); }
+    .mission-row .row .val.green { color: var(--green); }
+    .mission-row .row .val.amber { color: var(--amber); }
+
+    .tl { position: relative; max-width: 900px; margin: 30px auto; }
+    .tl::before {
+        content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+        background: linear-gradient(180deg, transparent, var(--rust-bright), var(--rust), var(--rust-bright), transparent);
+        transform: translateX(-50%); opacity: 0.5;
+    }
+    .tl-item {
+        position: relative; margin: 30px 0; opacity: 0;
+        transform: translateY(14px); transition: all 0.6s;
+    }
+    .tl-item.on { opacity: 1; transform: translateY(0); }
+    .tl-card {
+        border: 1px solid var(--line); background: rgba(16,13,10,0.75);
+        padding: 18px 20px; width: 44%; position: relative;
+        cursor: pointer; transition: all 0.25s;
+    }
+    .tl-card:hover { border-color: var(--amber); box-shadow: 0 0 22px rgba(200,145,44,0.15); }
+    .tl-card::before {
+        content: ''; position: absolute; top: 20px; width: 11px; height: 11px;
+        background: var(--bg-deep); border: 1px solid var(--amber);
+        border-radius: 50%; box-shadow: 0 0 10px var(--amber-glow);
+    }
+    .tl-item:nth-child(odd) .tl-card { left: 0; }
+    .tl-item:nth-child(odd) .tl-card::before { right: -26px; }
+    .tl-item:nth-child(even) .tl-card { left: 56%; }
+    .tl-item:nth-child(even) .tl-card::before { left: -26px; }
+    .tl-card h4 {
+        font-family: 'VT323', monospace; font-size: 1em; color: var(--amber);
+        letter-spacing: 0.22em; margin: 0 0 6px; text-shadow: 0 0 5px var(--amber-glow);
+    }
+    .tl-card h3 {
+        font-family: 'VT323', monospace; font-size: 1.25em; color: var(--bone);
+        letter-spacing: 0.1em; margin: 0 0 8px;
+    }
+    .tl-card h3.high { color: var(--rust-bright); text-shadow: 0 0 6px rgba(168,42,42,0.4); }
+    .tl-card p { color: var(--bone-dim); font-size: 0.85em; margin: 0; }
+
+    .chart {
+        height: 200px; display: flex; align-items: flex-end; gap: 20px;
+        padding: 20px 10px 30px; border-bottom: 1px solid var(--line); margin: 20px 0 40px;
+    }
+    .chart > div { display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .chart-bar {
+        width: 100%; max-width: 60px;
+        background: linear-gradient(180deg, var(--amber), var(--rust));
+        box-shadow: 0 0 12px var(--amber-glow); transition: height 1.2s ease-out;
+        position: relative; min-height: 4px;
+    }
+    .chart-label {
+        color: var(--bone-dim); font-size: 0.75em; letter-spacing: 0.18em;
+        margin-top: 10px; text-transform: uppercase;
+    }
+
+    .map-wrap { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .map {
+        border: 1px solid var(--line-red); background: var(--bg-deep);
+        height: 400px; position: relative; overflow: hidden;
+        background-image:
+            linear-gradient(rgba(168,42,42,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(168,42,42,0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+    .map-grid {
+        position: absolute; inset: 0;
+        display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
+    }
+    .map-grid > div { border: 1px solid rgba(216,208,190,0.04); position: relative; }
+    .map-grid > div.path { background: rgba(168,42,42,0.15); }
+    .map-grid > div.room { background: rgba(200,145,44,0.1); }
+    .map-grid > div.danger { background: rgba(168,42,42,0.28); animation: dangerPulse 2s infinite; }
+    @keyframes dangerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .unit-dot {
+        position: absolute; width: 16px; height: 16px; border-radius: 50%;
+        background: var(--green); border: 2px solid var(--bone);
+        box-shadow: 0 0 12px var(--green), 0 0 24px rgba(109,138,94,0.4);
+        transform: translate(-50%, -50%); z-index: 10; animation: unitPulse 2s infinite;
+    }
+    @keyframes unitPulse {
+        0%,100% { box-shadow: 0 0 12px var(--green), 0 0 24px rgba(109,138,94,0.4); }
+        50% { box-shadow: 0 0 18px var(--green), 0 0 36px rgba(109,138,94,0.6); }
+    }
+
+    .modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.85); backdrop-filter: blur(2px);
+        z-index: 20000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal.on { display: flex; }
+    .modal-box {
+        border: 1px solid var(--line-red);
+        background: linear-gradient(180deg, #14110d, #0a0806);
+        padding: 32px 36px; max-width: 860px; width: 100%; max-height: 88vh;
+        overflow-y: auto; position: relative;
+        box-shadow: 0 0 60px rgba(122,30,30,0.25), inset 0 0 40px rgba(0,0,0,0.5);
+        animation: modalIn 0.35s ease-out;
+    }
+    .modal-box::before, .modal-box::after {
+        content: ''; position: absolute; width: 16px; height: 16px; border: 1px solid var(--amber);
+    }
+    .modal-box::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .modal-box::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .modal-x {
+        position: absolute; top: 12px; right: 16px; color: var(--bone-dark);
+        font-size: 1.5em; cursor: pointer; transition: color 0.2s;
+        background: none; border: none; font-family: inherit;
+    }
+    .modal-x:hover { color: var(--rust-bright); }
+    .modal-box h2 {
+        font-family: 'VT323', monospace; color: var(--amber);
+        letter-spacing: 0.18em; margin: 0 0 16px; text-shadow: 0 0 8px var(--amber-glow);
+        text-transform: uppercase;
+    }
+    .modal-box h3 {
+        font-family: 'VT323', monospace; color: var(--rust-bright);
+        letter-spacing: 0.12em; margin: 20px 0 10px; text-transform: uppercase;
+    }
+    .modal-box p { color: var(--bone-dim); font-size: 0.9em; line-height: 1.7; letter-spacing: 0.04em; }
+
+    #consoleModal .modal-box {
+        max-width: 96%; width: 96%; height: 90vh; padding: 0; overflow: hidden;
+        border-color: var(--amber-dim); display: flex; flex-direction: column;
+    }
+    .con-head {
+        padding: 16px 24px; border-bottom: 1px solid var(--line-amber);
+        background: rgba(20,17,13,0.9); display: flex; justify-content: space-between;
+        align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .con-head h2 {
+        margin: 0; font-size: 1.5em; color: var(--amber); letter-spacing: 0.18em;
+        font-family: 'VT323', monospace; text-shadow: 0 0 8px var(--amber-glow);
+        text-transform: uppercase;
+    }
+    .con-head .sub {
+        color: var(--bone-dim); font-size: 0.75em; letter-spacing: 0.22em; text-transform: uppercase;
+    }
+    .con-body { flex: 1; overflow-y: auto; padding: 24px; }
+    .con-foot {
+        padding: 14px 24px; border-top: 1px solid var(--line-amber);
+        background: rgba(20,17,13,0.9); display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    .con-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px;
+    }
+    .con-card {
+        border: 1px solid var(--line-amber); background: rgba(16,13,10,0.7);
+        padding: 20px; position: relative;
+    }
+    .con-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, var(--amber), transparent); opacity: 0.4;
+    }
+    .con-card h3 {
+        font-family: 'VT323', monospace; color: var(--amber);
+        letter-spacing: 0.15em; margin: 0 0 14px; font-size: 1.25em;
+        text-shadow: 0 0 6px var(--amber-glow); padding-bottom: 10px;
+        border-bottom: 1px dashed var(--line-amber); text-transform: uppercase;
+    }
+    .con-card h3::before { content: '▸ '; color: var(--rust-bright); }
+
+    .con-card.locked {
+        border-color: var(--bone-dark);
+        background: repeating-linear-gradient(45deg, rgba(16,13,10,0.7) 0 12px, rgba(20,17,13,0.7) 12px 24px);
+    }
+    .con-card.locked h3 { color: var(--bone-dark); border-bottom-color: var(--bone-dark); }
+    .con-card.locked h3::before { color: var(--bone-dark); }
+    .locked-inner {
+        text-align: center; padding: 30px 10px; color: var(--bone-dark);
+        font-size: 0.85em; letter-spacing: 0.2em; text-transform: uppercase;
+    }
+    .locked-inner .lic { font-size: 2.5em; color: var(--bone-dark); margin-bottom: 10px; }
+
+    .row {
+        display: flex; justify-content: space-between; padding: 7px 0;
+        border-bottom: 1px solid rgba(216,208,190,0.05); font-size: 0.85em;
+    }
+    .row:last-child { border-bottom: none; }
+    .row .lbl { color: var(--bone-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+    .row .val { color: var(--bone); }
+    .row .val.amber { color: var(--amber); }
+    .row .val.green { color: var(--green); }
+    .row .val.red { color: var(--rust-bright); }
+    .row .val.warn { color: var(--warning); }
+
+    .log {
+        border: 1px solid var(--line-red); background: rgba(0,0,0,0.4);
+        padding: 12px; margin-top: 14px; max-height: 160px; overflow-y: auto; font-size: 0.82em;
+    }
+    .log-entry {
+        padding: 4px 0; border-bottom: 1px dashed rgba(216,208,190,0.06);
+        display: flex; gap: 10px;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-t { color: var(--bone-dark); letter-spacing: 0.12em; }
+    .log-c { color: var(--bone-dim); }
+
+    .rel-legend {
+        border: 1px solid var(--line-amber);
+        background: rgba(16,13,10,0.6);
+        padding: 16px 18px;
+        margin-bottom: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+    }
+    .rel-legend-title {
+        width: 100%;
+        text-align: center;
+        color: var(--bone-dim);
+        font-size: 0.72em;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed var(--line);
+    }
+    .rel-tag {
+        display: inline-block;
+        padding: 5px 12px;
+        font-size: 0.72em;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        border: 1px solid;
+        font-family: 'Share Tech Mono', monospace;
+        cursor: default;
+        transition: all 0.2s;
+    }
+    .rel-tag:hover { transform: translateY(-1px); }
+    .rt-distrust   { color: #d4a72c; border-color: #d4a72c; text-shadow: 0 0 6px rgba(212,167,44,0.4); }
+    .rt-melancholy { color: #6a6a6a; border-color: #6a6a6a; }
+    .rt-neutral    { color: #d8d0be; border-color: #d8d0be; }
+    .rt-friend     { color: #4a9a4a; border-color: #4a9a4a; text-shadow: 0 0 6px rgba(74,154,74,0.4); }
+    .rt-strong     { color: #33cc33; border-color: #33cc33; text-shadow: 0 0 8px rgba(51,204,51,0.5); }
+    .rt-love       { color: #e07070; border-color: #e07070; text-shadow: 0 0 6px rgba(224,112,112,0.4); }
+    .rt-dead       { color: #1a1a1a; border-color: #1a1a1a; background: #0a0a0a; text-shadow: 0 0 2px #333; }
+    .rt-wary       { color: #d97820; border-color: #d97820; text-shadow: 0 0 6px rgba(217,120,32,0.4); }
+    .rt-fear       { color: #3b82f6; border-color: #3b82f6; text-shadow: 0 0 6px rgba(59,130,246,0.4); }
+    .rt-disappoint { color: #b8a030; border-color: #b8a030; }
+    .rt-respect    { color: #e0b840; border-color: #e0b840; text-shadow: 0 0 6px rgba(224,184,64,0.4); }
+    .rt-regret     { color: #4a6a9a; border-color: #4a6a9a; }
+    .rt-sympathy   { color: #5ac8e0; border-color: #5ac8e0; text-shadow: 0 0 6px rgba(90,200,224,0.4); }
+    .rt-sympathia  { color: #c060c0; border-color: #c060c0; text-shadow: 0 0 6px rgba(192,96,192,0.5); }
+    .rt-hostility  { color: #a02020; border-color: #a02020; text-shadow: 0 0 6px rgba(160,32,32,0.5); }
+
+    details.rel-cat {
+        border: 1px solid var(--line); margin-bottom: 10px;
+        background: rgba(16,13,10,0.5);
+    }
+    details.rel-cat > summary {
+        padding: 12px 16px; cursor: pointer; color: var(--amber);
+        font-family: 'VT323', monospace; letter-spacing: 0.18em; font-size: 1.15em;
+        list-style: none; display: flex; align-items: center; gap: 10px;
+        transition: all 0.2s; text-transform: uppercase;
+    }
+    details.rel-cat > summary::-webkit-details-marker { display: none; }
+    details.rel-cat > summary::before {
+        content: '▸'; color: var(--rust-bright); transition: transform 0.2s;
+        display: inline-block;
+    }
+    details.rel-cat[open] > summary::before { transform: rotate(90deg); }
+    details.rel-cat > summary:hover { background: rgba(200,145,44,0.05); }
+    details.rel-cat > summary .count {
+        margin-left: auto; font-size: 0.7em; color: var(--bone-dark); letter-spacing: 0.18em;
+    }
+
+    details.rel-sub {
+        margin: 0; border-top: 1px solid var(--line); background: rgba(0,0,0,0.3);
+    }
+    details.rel-sub > summary {
+        padding: 10px 16px 10px 32px; cursor: pointer; color: var(--bone);
+        font-size: 0.9em; letter-spacing: 0.14em; list-style: none;
+        text-transform: uppercase;
+        display: flex; align-items: center; gap: 10px;
+    }
+    details.rel-sub > summary::-webkit-details-marker { display: none; }
+    details.rel-sub > summary::before {
+        content: '· '; color: var(--rust-bright); margin-right: 4px;
+    }
+    details.rel-sub[open] > summary { color: var(--amber); background: rgba(200,145,44,0.03); }
+
+    .rel-tag-select {
+        margin-left: auto;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--line-red);
+        color: var(--bone);
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.72em;
+        letter-spacing: 0.12em;
+        padding: 3px 6px;
+        outline: none;
+        text-transform: uppercase;
+        cursor: not-allowed;
+        opacity: 0.7;
+        pointer-events: none;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+    .rel-tag-select:disabled {
+        color: var(--bone-dim);
+        background: rgba(0,0,0,0.6);
+        border-color: var(--bone-dark);
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+    .rel-tag-select option { background: #14110d; color: var(--bone); }
+
+    .rel-note {
+        display: block;
+        width: 100%;
+        min-height: 78px;
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid var(--line);
+        color: var(--bone-dim);
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.88em;
+        letter-spacing: 0.03em;
+        line-height: 1.6;
+        resize: none;
+        outline: none;
+        cursor: not-allowed;
+        opacity: 0.85;
+    }
+    .rel-note:focus {
+        border-color: var(--line);
+        box-shadow: none;
+        background: rgba(0,0,0,0.35);
+    }
+    .rel-note::placeholder {
+        color: var(--bone-dark);
+        letter-spacing: 0.2em;
+        font-style: normal;
+    }
+    .rel-note::selection { background: transparent; }
+
+    .liq {
+        position: fixed; inset: 0;
+        background: radial-gradient(circle, rgba(168,42,42,0.85), rgba(60,10,10,0.96));
+        z-index: 30000; display: none; justify-content: center; align-items: center;
+        flex-direction: column; animation: liqFade 5s forwards;
+    }
+    .liq.on { display: flex; }
+    @keyframes liqFade {
+        0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; }
+    }
+    .liq h1 {
+        font-family: 'Major Mono Display', 'VT323', monospace;
+        font-size: 4.5em; color: var(--bone);
+        letter-spacing: 0.15em; text-shadow: 0 0 30px var(--rust-bright), 0 0 60px var(--rust-bright);
+        margin: 0 0 20px; animation: liqPulse 1s infinite alternate;
+        text-transform: uppercase;
+    }
+    @keyframes liqPulse { 0% { transform: scale(1); } 100% { transform: scale(1.06); } }
+    .liq .cnt {
+        font-family: 'VT323', monospace; font-size: 4em; color: var(--bone);
+        text-shadow: 0 0 20px var(--rust-bright);
+    }
+
+    .doc {
+        border: 1px solid var(--line-amber);
+        background:
+            linear-gradient(180deg, rgba(20,17,13,0.9), rgba(12,10,8,0.9)),
+            repeating-linear-gradient(0deg, transparent 0, transparent 28px, rgba(200,145,44,0.04) 28px, rgba(200,145,44,0.04) 29px);
+        padding: 26px 30px; position: relative; font-size: 0.92em; line-height: 1.75;
+    }
+    .doc::before, .doc::after {
+        content: ''; position: absolute; width: 18px; height: 18px; border: 1px solid var(--rust-bright);
+    }
+    .doc::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+    .doc::after  { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+    .doc-head {
+        text-align: center; border-bottom: 1px solid var(--line-amber);
+        padding-bottom: 12px; margin-bottom: 18px;
+    }
+    .doc-head .d1 {
+        font-family: 'VT323', monospace; color: var(--amber);
+        letter-spacing: 0.35em; font-size: 1.2em; text-transform: uppercase;
+    }
+    .doc-head .d2 {
+        color: var(--bone-dim); font-size: 0.75em; letter-spacing: 0.3em; margin-top: 4px;
+        text-transform: uppercase;
+    }
+    .doc-meta {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px;
+        font-size: 0.8em; margin-bottom: 16px;
+        border-bottom: 1px dashed var(--line-amber); padding-bottom: 14px;
+        text-transform: uppercase;
+    }
+    .doc-meta span { color: var(--bone-dim); letter-spacing: 0.1em; }
+    .doc-meta b { color: var(--bone); font-weight: normal; letter-spacing: 0.08em; }
+    .doc-body { color: var(--bone); font-size: 0.95em; }
+    .doc-body p { margin: 10px 0; text-align: justify; }
+    .doc-sign {
+        margin-top: 22px; padding-top: 14px; border-top: 1px dashed var(--line-amber);
+        display: flex; justify-content: space-between; font-size: 0.78em;
+        color: var(--bone-dim); letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .doc-sign .sig { color: var(--amber); }
+
+    @media (max-width: 820px) {
+        .shell { padding: 60px 12px 40px; }
+        .ident { grid-template-columns: 1fr; text-align: center; gap: 12px; }
+        .ident-sigil, .ident-state { justify-content: center; }
+        .tab { min-width: 100%; }
+        .tl::before { left: 18px; }
+        .tl-card { width: calc(100% - 40px) !important; left: 40px !important; }
+        .tl-card::before { left: -32px !important; right: auto !important; }
+        .map-wrap { grid-template-columns: 1fr; }
+        .section { padding: 22px 16px; }
+        .modal-box { padding: 22px 18px; }
+        .boot-frame { padding: 30px 22px; }
+        .boot-title { font-size: 1.9em; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ================= ФОНОВАЯ МУЗЫКА ================= -->
+<audio id="bgMusic" loop preload="auto" style="display:none;">
+    <source src="cigarette-wife.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ================= GIF TRANSITION ================= -->
+<div id="gifTransition">
+    <img src="transition.gif" alt="...">
+</div>
+
+<div class="crt-scan"></div>
+<div class="crt-vignette"></div>
+<div class="crt-flicker"></div>
+<div class="noise"></div>
+<div class="glitch-flash" id="glitchFlash"></div>
+
+<div class="corner-mark tl">AEON :: <span>PROTEKTORAT</span></div>
+<div class="corner-mark tr">EINHEIT <span>HABR-RF5-112</span></div>
+<div class="corner-mark bl">SIGNAL <span>STABIL</span></div>
+<div class="corner-mark br">JAHR <span>2157</span></div>
+
+<!-- ================= BOOT ================= -->
+<div class="boot-screen" id="bootScreen">
+    <div class="boot-frame">
+        <h1 class="boot-title">EINHEIT HABR-RF5-112</h1>
+        <div class="boot-sub">REPLIKA · MEDIZINISCHER OFFIZIER</div>
+
+        <div class="boot-line">SIGNAL: <span class="val">KANAL 07 / STABIL</span></div>
+        <div class="boot-line">KERN: <span class="ok">NEUROPATTERN GELADEN</span></div>
+        <div class="boot-line">BIO-MONITOR: <span class="ok">AKTIV</span></div>
+        <div class="boot-line">SYSTEMJAHR: <span class="val">2157</span></div>
+        <div class="boot-line">AKTIVIERUNG: <span class="val">2155.12.26</span></div>
+
+        <input type="password" class="pw-input" id="pwInput"
+               placeholder="KODE EINGEBEN"
+               autocomplete="off"
+               onkeydown="onPwKey(event)">
+
+        <button class="btn amber" style="width: 100%; padding: 14px; margin-top: 14px;" onclick="checkPw()">
+            ▶ ZUGANG BESTÄTIGEN
+        </button>
+
+        <div class="boot-warn" id="bootWarn">
+            ✕ ZUGANG VERWEIGERT · VORFALL PROTOKOLLIERT
+        </div>
+
+        <div class="pw-hint" style="margin-top: 26px;">
+            KODE: <span style="color: var(--amber);">HABR-RF5-112</span>
+        </div>
+    </div>
+</div>
+
+<div class="liq" id="liq">
+    <h1>BEREITSCHAFT</h1>
+    <div class="cnt" id="liqCnt">5</div>
+</div>
+
+<!-- ================= SHELL ================= -->
+<div class="shell" id="shell">
+
+    <div class="ident">
+        <div class="ident-sigil" onclick="openModal('nationModal')">
+            <div class="sigil-mark">◈</div>
+            <div class="sigil-text">
+                <strong>EUSAN</strong>
+                NATION · AEON
+            </div>
+        </div>
+
+        <div class="ident-main">
+            <span class="unit">HABR-RF5-112</span>
+            <span class="serial">REPLIKA // MEDIZINISCHER OFFIZIER // KLASSE-III</span>
+        </div>
+
+        <div class="ident-state">
+            <span class="led" id="stateLed"></span>
+            <span id="stateTxt">STABIL · BEREIT</span>
+            <button class="btn small amber" onclick="openConsole()" style="margin-left: 10px;">
+                ⌬ KONSOLE
+            </button>
+        </div>
+    </div>
+
+    <div class="tab-rack">
+        <button class="tab active" data-tab="overview" onclick="changeTab('overview')">◆ ÜBERSICHT</button>
+        <button class="tab" data-tab="bio" onclick="changeTab('bio')">◆ PERSONALAKTE</button>
+        <button class="tab" data-tab="abilities" onclick="changeTab('abilities')">◆ BEZIEHUNGEN</button>
+        <button class="tab" data-tab="gear" onclick="changeTab('gear')">◆ AUSRÜSTUNG</button>
+        <button class="tab" data-tab="timeline" onclick="changeTab('timeline')">◆ CHRONOLOGIE</button>
+        <button class="tab" data-tab="stats" onclick="changeTab('stats')">◆ STATISTIK</button>
+        <button class="tab" data-tab="location" onclick="changeTab('location')">◆ POSITION</button>
+    </div>
+
+    <!-- ============ ÜBERSICHT ============ -->
+    <div class="section active" id="overview">
+        <h2 class="sec-title"><span class="deco">◆</span>HABR-RF5-112</h2>
+        <div class="sec-sub">Лазаретный хирург · Постоянное назначение: ERES-427 · Активный статус</div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h3>◈ СОСТОЯНИЕ В РЕАЛЬНОМ ВРЕМЕНИ</h3>
+                <p><strong>Обозначение:</strong> HABR-RF5-112</p>
+                <p><strong>Тип:</strong> Реплика класса «Ястреб» (HABR)</p>
+                <p><strong>Специализация:</strong> Лазаретная хирургия, оперативная помощь, стабилизация</p>
+                <p><strong>Уровень доступа:</strong> SCHNELLE EINGREIFGRUPPE / MED-I</p>
+                <p><strong>Статус:</strong> <span class="phos" style="color: var(--green);">АКТИВНА · ГОТОВА</span></p>
+                <p><strong>Последний сигнал:</strong> 03:42 SST</p>
+                <button class="btn" style="margin-top: 14px; width: 100%;" onclick="updateStatus()">
+                    ⟳ ОБНОВИТЬ ТЕЛЕМЕТРИЮ
+                </button>
+            </div>
+
+            <div class="panel">
+                <h3>◈ БЫСТРЫЙ ДОСТУП</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn" onclick="showInfo('med')">✚ МЕДИЦИНСКИЕ ПОКАЗАТЕЛИ</button>
+                    <button class="btn locked" id="psychBtn" onclick="tryUnlockPsych()">
+                        🔒 СОСТОЯНИЕ СЛЕПКА <span style="font-size: 0.72em; color: var(--bone-dark);">[КОД]</span>
+                    </button>
+                    <button class="btn" onclick="showInfo('ops')">✚ АКТИВНЫЕ НАЗНАЧЕНИЯ</button>
+                    <button class="btn amber" onclick="combatReady()">⚔ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ</button>
+                </div>
+                <div style="margin-top: 12px; font-size: 0.75em; color: var(--bone-dark); letter-spacing: 0.12em; text-transform: uppercase;">
+                    ЗАКРЫТЫЙ РАЗДЕЛ · ТРЕБУЕТСЯ КОД ДОСТУПА
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-4" style="margin-top: 20px;">
+            <div class="stat" onclick="showInfo('med')">
+                <div class="stat-label">БИО-СОСТОЯНИЕ</div>
+                <div class="stat-val" id="statMed">92%</div>
+                <div class="stat-desc">ОПТИМАЛЬНО</div>
+            </div>
+            <div class="stat" onclick="tryUnlockPsych()">
+                <div class="stat-label">СТАБИЛЬНОСТЬ СЛЕПКА</div>
+                <div class="stat-val" id="statPsych">—</div>
+                <div class="stat-desc" id="statPsychDesc">🔒 ЗАКРЫТО</div>
+            </div>
+            <div class="stat" onclick="showInfo('ops')">
+                <div class="stat-label">НАЗНАЧЕНИЙ</div>
+                <div class="stat-val" id="statOps">2</div>
+                <div class="stat-desc">В ПРОЦЕССЕ</div>
+            </div>
+            <div class="stat" onclick="showInfo('med')">
+                <div class="stat-label">ПОСЛЕДНИЙ ОСМОТР</div>
+                <div class="stat-val" id="statCycle">6ч</div>
+                <div class="stat-desc">НАЗАД</div>
+            </div>
+        </div>
+
+        <div id="infoBlock" style="display: none; margin-top: 26px;">
+            <div style="display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;">
+                <button class="btn small" onclick="changeInfo('med')">МЕДИЦИНА</button>
+                <button class="btn small locked" id="psychTabBtn" onclick="tryUnlockPsych()">🔒 СЛЕПОК</button>
+                <button class="btn small" onclick="changeInfo('ops')">НАЗНАЧЕНИЯ</button>
+            </div>
+
+            <div id="medInfo" style="display: none;">
+                <div class="panel">
+                    <h3>◈ БИО-МОНИТОРИНГ</h3>
+                    <div class="vitals">
+                        <div class="vital"><div class="vlbl">ПУЛЬС</div><div class="vval">68</div><div class="vunit">уд/мин</div></div>
+                        <div class="vital"><div class="vlbl">ДАВЛЕНИЕ</div><div class="vval">120/80</div><div class="vunit">мм рт.ст.</div></div>
+                        <div class="vital"><div class="vlbl">ТЕМПЕРАТУРА ЯДРА</div><div class="vval">36.6</div><div class="vunit">°C</div></div>
+                        <div class="vital"><div class="vlbl">САТУРАЦИЯ</div><div class="vval">98%</div><div class="vunit">O₂</div></div>
+                    </div>
+                    <div class="stat-line"><span class="k">Клеточная регенерация</span><span class="v green">Номинальная · ×2.8</span></div>
+                    <div class="stat-line"><span class="k">Целостность каркаса</span><span class="v amber">100%</span></div>
+                    <div class="stat-line"><span class="k">Медицинский осмотр</span><span class="v">Через 12 часов</span></div>
+                </div>
+            </div>
+
+            <div id="psychInfo" style="display: none;">
+                <div class="panel">
+                    <h3>◈ СОСТОЯНИЕ НЕЙРОПАТТЕРНА <span style="color: var(--green); font-size: 0.7em;">[РАЗБЛОКИРОВАНО]</span></h3>
+                    <div class="metric">
+                        <div class="mrow"><span class="k">Стрессоустойчивость</span><span class="v">87%</span></div>
+                        <div class="mbar"><i style="width: 87%"></i></div>
+                    </div>
+                    <div class="metric">
+                        <div class="mrow"><span class="k">Когнитивная функция</span><span class="v">91%</span></div>
+                        <div class="mbar"><i style="width: 91%"></i></div>
+                    </div>
+                    <div class="metric">
+                        <div class="mrow"><span class="k">Эмоциональный контроль</span><span class="v">84%</span></div>
+                        <div class="mbar"><i style="width: 84%"></i></div>
+                    </div>
+                    <div class="metric">
+                        <div class="mrow"><span class="k">Целостность слепка</span><span class="v">88%</span></div>
+                        <div class="mbar"><i style="width: 88%"></i></div>
+                    </div>
+                    <p style="margin-top: 14px; font-size: 0.85em; color: var(--bone-dim);">
+                        <strong style="color: var(--amber);">Рекомендация:</strong> стандартный режим. Обязательный самоанализ вмешательств — каждые 48 часов.
+                        Обмен опытом с другими единицами HABR — в штатном порядке.
+                    </p>
+                </div>
+            </div>
+
+            <div id="opsInfo" style="display: none;">
+                <div class="panel">
+                    <h3>◈ АКТИВНЫЕ НАЗНАЧЕНИЯ</h3>
+                    <div class="mission-row">
+                        <div class="mt">НАЗНАЧЕНИЕ НА «ERES-427»</div>
+                        <div class="row"><span class="lbl">Приоритет</span><span class="val red">MAXIMAL</span></div>
+                        <div class="row"><span class="lbl">Прогресс</span><span class="val">5%</span></div>
+                        <div class="mp"><i style="width: 5%"></i></div>
+                    </div>
+                    <div class="mission-row">
+                        <div class="mt">ПЛАНОВОЕ ОБСЛУЖИВАНИЕ МОДУЛЯ</div>
+                        <div class="row"><span class="lbl">Приоритет</span><span class="val warn">MITTEL</span></div>
+                        <div class="row"><span class="lbl">Прогресс</span><span class="val">60%</span></div>
+                        <div class="mp"><i style="width: 60%"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ PERSONALAKTE ============ -->
+    <div class="section" id="bio">
+        <h2 class="sec-title"><span class="deco">◆</span>ЛИЧНОЕ ДЕЛО</h2>
+        <div class="sec-sub">HABR-RF5-112 · Био-сигнатура: военный хирург · Верификация пройдена</div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h3>◈ СЛУЖЕБНОЕ ФОТО</h3>
+                <div class="photo-frame">
+                    <img src="portrait.webp" alt="HABR-RF5-112">
+                    <div class="photo-caption">
+                        <strong>HABR-RF5-112</strong>
+                        ROTFRONT · SECTOR 6 GAMMA C
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>◈ ОСНОВНЫЕ ДАННЫЕ</h3>
+                <div class="stat-line"><span class="k">Обозначение</span><span class="v amber">HABR-RF5-112</span></div>
+                <div class="stat-line"><span class="k">Тип реплики</span><span class="v">HABR · «Ястреб»</span></div>
+                <div class="stat-line"><span class="k">Класс</span><span class="v">III — Лазаретный Хирург</span></div>
+                <div class="stat-line"><span class="k">Назначение</span><span class="v">Лазаретная хирургия · Стабилизация</span></div>
+                <div class="stat-line"><span class="k">Объект производства</span><span class="v">ROTFRONT SECTOR 6 GAMMA C</span></div>
+                <div class="stat-line"><span class="k">Рост / Масса</span><span class="v">190 см / 102 кг</span></div>
+                <div class="stat-line"><span class="k">Серия</span><span class="v">HABR-R632-112GAMMA CENTAVRA</span></div>
+                <div class="stat-line"><span class="k">Активация</span><span class="v">2155.12.26</span></div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+            <h3>◈ ХАРАКТЕРИСТИКА</h3>
+            <div class="doc">
+                <div class="doc-head">
+                    <div class="d1">СЛУЖЕБНАЯ ХАРАКТЕРИСТИКА</div>
+                    <div class="d2">AEON PROTEKTORAT · МЕДИЦИНСКИЙ КОРПУС</div>
+                </div>
+                <div class="doc-meta">
+                    <span>Единица:</span><b>HABR-RF5-112</b>
+                    <span>Подразделение:</span><b>Лазаретный корпус ROTFRONT</b>
+                    <span>Составлена:</span><b>Отдел кадров AEON</b>
+                    <span>Дата:</span><b>2157.██.██</b>
+                </div>
+                <div class="doc-body">
+                    <p>Настоящая характеристика составлена по результатам оперативного наблюдения и анализа служебной деятельности единицы HABR-RF5-112 за отчётный период.</p>
+                    <p>Реплика проявляет устойчивые профессиональные качества, соответствующие её назначению в качестве лазаретного хирурга. Демонстрирует внимательность к деталям, дисциплинированность и способность к длительной концентрации при проведении вмешательств повышенной сложности. В общении с коллегами и пациентами сохраняет ровный, спокойный тон, при необходимости — инициирует отвлекающие беседы с целью снижения тревожности пациента.</p>
+                    <p>В свободные циклы занимается самоанализом операций, ведёт рабочие записи и изучает медицинскую литературу. К самостоятельному пересмотру собственных методов относится критично, учитывает замечания кураторов.</p>
+                    <p>Отмечено повышенное чувство профессиональной ответственности. В ряде случаев наблюдается склонность к отстаиванию собственной методики ведения вмешательства — при отсутствии внешнего давления этот фактор не влияет на качество работы. Рекомендуется сохранять штатный режим наблюдения и обеспечивать регулярный обмен опытом с другими единицами HABR.</p>
+                </div>
+                <div class="doc-sign">
+                    <div>Составил: <span class="sig">▮▮▮▮▮▮ / Отдел кадров</span></div>
+                    <div>Утверждено: <span class="sig">AEON PROTEKTORAT</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+            <h3>◈ РЕГЛАМЕНТ СЛУЖЕБНОЙ ДЕЯТЕЛЬНОСТИ</h3>
+            <div class="grid-2">
+                <div>
+                    <p style="color: var(--rust-bright); letter-spacing: 0.18em; font-size: 0.85em; margin-bottom: 8px; text-transform: uppercase;">▲ Факторы снижения эффективности</p>
+                    <ul>
+                        <li>Вмешательство в проводимую работу</li>
+                        <li>Отказ пациента от помощи</li>
+                        <li>Оспаривание профессиональной квалификации</li>
+                        <li>Осложнения при отстаивании собственного метода</li>
+                    </ul>
+                    <p style="font-size: 0.85em; color: var(--bone-dim); margin-top: 10px;">
+                        При снижении эффективности единица становится резче в служебных вопросах. Рекомендуется временный вывод из активной смены и сеанс стабилизации.
+                    </p>
+                </div>
+                <div>
+                    <p style="color: var(--green); letter-spacing: 0.18em; font-size: 0.85em; margin-bottom: 8px; text-transform: uppercase;">◈ Штатные процедуры восстановления</p>
+                    <ul>
+                        <li>Изучение медицинской литературы</li>
+                        <li>Обсуждение вмешательств с другими единицами HABR</li>
+                        <li>Успешные сложные хирургические вмешательства</li>
+                        <li>Контролируемый самоанализ под наблюдением куратора</li>
+                    </ul>
+                    <p style="font-size: 0.85em; color: var(--bone-dim); margin-top: 10px;">
+                        ⚠ Самоанализ без контроля может увести единицу в глубокое самокопание. Присутствие куратора обязательно.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ BEZIEHUNGEN ============ -->
+    <div class="section" id="abilities">
+        <h2 class="sec-title"><span class="deco">◆</span>ВЗАИМООТНОШЕНИЯ</h2>
+        <div class="sec-sub">Служебные связи · Реплики и гештальты · Личные впечатления</div>
+
+        <div class="rel-legend">
+            <div class="rel-legend-title">◈ ШКАЛА ОТНОШЕНИЙ ◈</div>
+            <span class="rel-tag rt-distrust">Недоверие</span>
+            <span class="rel-tag rt-melancholy">Тоска</span>
+            <span class="rel-tag rt-neutral">Нейтралитет</span>
+            <span class="rel-tag rt-friend">Дружба</span>
+            <span class="rel-tag rt-strong">Крепкая связь</span>
+            <span class="rel-tag rt-love">Любовь</span>
+            <span class="rel-tag rt-dead">Мёртв</span>
+            <span class="rel-tag rt-wary">Настороженность</span>
+            <span class="rel-tag rt-fear">Страх</span>
+            <span class="rel-tag rt-disappoint">Разочарование</span>
+            <span class="rel-tag rt-respect">Уважение</span>
+            <span class="rel-tag rt-regret">Сожаление</span>
+            <span class="rel-tag rt-sympathy">Сочувствие</span>
+            <span class="rel-tag rt-sympathia">Симпатия</span>
+            <span class="rel-tag rt-hostility">Вражда</span>
+        </div>
+
+        <div style="max-width: 900px; margin: 0 auto;">
+
+            <details class="rel-cat">
+                <summary>АДМИНИСТРАЦИЯ<span class="count">3 ПОДРАЗДЕЛЕНИЯ</span></summary>
+
+                <details class="rel-sub">
+                    <summary>FKLR · Falke
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+
+                <details class="rel-sub">
+                    <summary>KAHR · Kahr
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+
+                <details class="rel-sub">
+                    <summary>ADLR · Adler
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>КОЛИБРИ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>KLBR · Kolibri
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>СКВОРЦЫ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>STAR · Starling
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>АИСТ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>STCR · Storch
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>СОВЫ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>EULR · Eule
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>АРЫ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>ARAR · Ara
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>МАЙНЫ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>MNHR · Meise
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat" open>
+                <summary>ЯСТРЕБЫ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub" open>
+                    <summary>HABR · Habr
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>СТЕРВЯТНИКИ<span class="count">1 ПОДРАЗДЕЛЕНИЕ</span></summary>
+                <details class="rel-sub">
+                    <summary>GEIR · Geier
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+            <details class="rel-cat">
+                <summary>ГЕШТАЛЬТЫ<span class="count">2 ПОДРАЗДЕЛЕНИЯ</span></summary>
+                <details class="rel-sub">
+                    <summary>GSCP · Geshtalt Civil Personal
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+                <details class="rel-sub">
+                    <summary>GSCC · Geshtalt Civil Criminal
+                        <select class="rel-tag-select" disabled>
+                            <option value="">— СТАТУС —</option>
+                            <option>НЕДОВЕРИЕ</option><option>ТОСКА</option><option>НЕЙТРАЛИТЕТ</option>
+                            <option>ДРУЖБА</option><option>КРЕПКАЯ СВЯЗЬ</option><option>ЛЮБОВЬ</option>
+                            <option>МЁРТВ</option><option>НАСТОРОЖЕННОСТЬ</option><option>СТРАХ</option>
+                            <option>РАЗОЧАРОВАНИЕ</option><option>УВАЖЕНИЕ</option><option>СОЖАЛЕНИЕ</option>
+                            <option>СОЧУВСТВИЕ</option><option>СИМПАТИЯ</option><option>ВРАЖДА</option>
+                        </select>
+                    </summary>
+                    <div class="rel-body">
+                        <textarea class="rel-note" readonly placeholder="[ ЗАМЕТКИ НЕДОСТУПНЫ · РЕЖИМ ТОЛЬКО ЧТЕНИЕ ]"></textarea>
+                    </div>
+                </details>
+            </details>
+
+        </div>
+
+        <div class="panel" style="margin-top: 26px;">
+            <h3>◈ ЛИЧНЫЕ ПОКАЗАТЕЛИ — ВЫПИСКА</h3>
+            <div class="metric">
+                <div class="mrow"><span class="k">Тактическая медицина (полевые условия)</span><span class="v">УРОВЕНЬ 1</span></div>
+                <div class="mbar"><i style="width: 18%"></i></div>
+            </div>
+            <p style="font-size: 0.85em; color: var(--bone-dim); margin-top: 10px;">
+                Примечание: длительное отсутствие активных боевых действий на закреплённом секторе привело к снижению показателя тактической подготовки.
+                Основная нагрузка единицы переведена на лазаретную хирургию и профилактические обходы.
+            </p>
+        </div>
+    </div>
+
+    <!-- ============ AUSRÜSTUNG ============ -->
+    <div class="section" id="gear">
+        <h2 class="sec-title"><span class="deco">◆</span>АВТОРИЗОВАННОЕ СНАРЯЖЕНИЕ</h2>
+        <div class="sec-sub">Полевой комплект HABR · Серийные и специальные средства</div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h3>«SKALPEL»</h3>
+                <p><strong>Тип:</strong> Полевой хирургический набор</p>
+                <p><strong>Комплектация:</strong> 42 инструмента, шовный материал, коагулятор</p>
+                <p><strong>Модификации:</strong> Термостабилизация, автоклавный контейнер</p>
+                <p style="color: var(--bone-dark); font-size: 0.82em; margin-top: 10px;">
+                    Основной инструментарий реплики. Никогда не покидает модуль.
+                </p>
+                <span style="display: inline-block; border: 1px solid var(--amber-dim); color: var(--amber); font-size: 0.7em; letter-spacing: 0.2em; padding: 3px 8px; margin-top: 10px; text-transform: uppercase;">Основной модуль</span>
+            </div>
+
+            <div class="panel">
+                <h3>«ADLER»</h3>
+                <p><strong>Тип:</strong> Пистолет-пулемёт (стандартный AEON)</p>
+                <p><strong>Калибр:</strong> 9×19 mm</p>
+                <p><strong>Модификации:</strong> Тактический фонарь, коллиматор</p>
+                <p style="color: var(--bone-dark); font-size: 0.82em; margin-top: 10px;">
+                    Оружие самообороны. Применяется только при угрозе для пациента или модуля.
+                </p>
+                <span style="display: inline-block; border: 1px solid var(--amber-dim); color: var(--amber); font-size: 0.7em; letter-spacing: 0.2em; padding: 3px 8px; margin-top: 10px; text-transform: uppercase;">Самооборона</span>
+            </div>
+
+            <div class="panel">
+                <h3>«KÖRPERKORB»</h3>
+                <p><strong>Тип:</strong> Полевой медпак 3-го уровня</p>
+                <p><strong>Комплектация:</strong> Кровезаменители, стимуляторы, шовный набор, шины</p>
+                <p><strong>Особенности:</strong> Рассчитан на 6 критических ранений</p>
+                <p style="color: var(--bone-dark); font-size: 0.82em; margin-top: 10px;">
+                    Носится на бедре. Расходные материалы восполняются при каждом цикле осмотра.
+                </p>
+                <span style="display: inline-block; border: 1px solid var(--amber-dim); color: var(--amber); font-size: 0.7em; letter-spacing: 0.2em; padding: 3px 8px; margin-top: 10px; text-transform: uppercase;">Медицина</span>
+            </div>
+
+            <div class="panel">
+                <h3>«KARTEI»</h3>
+                <p><strong>Тип:</strong> Персональная картотека вмешательств</p>
+                <p><strong>Формат:</strong> Защищённый модуль памяти, шифрование AEON</p>
+                <p><strong>Содержимое:</strong> Личные заметки, разбор операций, критические замечания</p>
+                <p style="color: var(--bone-dark); font-size: 0.82em; margin-top: 10px;">
+                    Используется в свободные циклы для самоанализа. Доступ к содержимому — только куратору корпуса.
+                </p>
+                <span style="display: inline-block; border: 1px solid var(--amber-dim); color: var(--amber); font-size: 0.7em; letter-spacing: 0.2em; padding: 3px 8px; margin-top: 10px; text-transform: uppercase;">Личный архив</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ CHRONOLOGIE ============ -->
+    <div class="section" id="timeline">
+        <h2 class="sec-title"><span class="deco">◆</span>ХРОНОЛОГИЯ СЛУЖБЫ</h2>
+        <div class="sec-sub">Оперативные записи · Формирование слепка · Ключевые вмешательства</div>
+
+        <div class="tl" id="tlBox"></div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn amber" onclick="addTl()">+ ДОБАВИТЬ ЗАПИСЬ</button>
+            <button class="btn" onclick="exportTl()" style="margin-left: 10px;">⇩ ЭКСПОРТ</button>
+        </div>
+    </div>
+
+    <!-- ============ STATISTIK ============ -->
+    <div class="section" id="stats">
+        <h2 class="sec-title"><span class="deco">◆</span>ОПЕРАТИВНАЯ СТАТИСТИКА</h2>
+        <div class="sec-sub">Всего вмешательств · Коэффициент успеха · Распределение</div>
+
+        <div class="grid-4">
+            <div class="stat">
+                <div class="stat-label">ЛАЗАРЕТНЫХ ОПЕРАЦИЙ</div>
+                <div class="stat-val">128</div>
+                <div class="stat-desc">ПОДТВЕРЖДЕНО</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">ПОЛЕВЫХ ВМЕШАТЕЛЬСТВ</div>
+                <div class="stat-val">14</div>
+                <div class="stat-desc">ЗА ВЕСЬ ПЕРИОД</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">КОЭФФИЦИЕНТ</div>
+                <div class="stat-val">94%</div>
+                <div class="stat-desc">ЭФФЕКТИВНОСТЬ</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">ЦИКЛОВ СЛУЖБЫ</div>
+                <div class="stat-val">2</div>
+                <div class="stat-desc">ГОДА С 2155</div>
+            </div>
+        </div>
+
+        <h3 style="font-family: 'VT323', monospace; color: var(--amber); letter-spacing: 0.15em; margin-top: 34px; text-transform: uppercase;">◈ РАСПРЕДЕЛЕНИЕ ПО ТИПАМ ВМЕШАТЕЛЬСТВ</h3>
+        <div class="chart" id="chartBox"></div>
+
+        <div class="grid-3" style="margin-top: 20px;">
+            <div class="panel">
+                <h4>ПО ТИПАМ</h4>
+                <p>Лазаретная хирургия: 128</p>
+                <p>Стабилизация: 42</p>
+                <p>Ампутации: 18</p>
+                <p>Полевые: 14</p>
+            </div>
+            <div class="panel">
+                <h4>ПО СЕКТОРАМ</h4>
+                <p>S-6 GAMMA: 48</p>
+                <p>S-1 ALPHA: 41</p>
+                <p>S-11 DELTA: 33</p>
+                <p>S-14 BETA: 25</p>
+            </div>
+            <div class="panel">
+                <h4>СОВМЕСТНО</h4>
+                <p>С HABR-группами: 61</p>
+                <p>С ГБР: 18</p>
+                <p>С КОМАНДОВАНИЕМ: 8</p>
+                <p>Автономно: 14</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ POSITION ============ -->
+    <div class="section" id="location">
+        <h2 class="sec-title"><span class="deco">◆</span>ТЕКУЩАЯ ПОЗИЦИЯ</h2>
+        <div class="sec-sub">Отслеживание в реальном времени · Канал 07 · Стабильный сигнал</div>
+
+        <div class="map-wrap">
+            <div class="map" id="mapBox"></div>
+
+            <div class="panel">
+                <h3>◈ ТЕЛЕМЕТРИЯ</h3>
+                <div class="stat-line"><span class="k">Позиция</span><span class="v amber" id="posTxt">ERES-427 · ROTFRONT</span></div>
+                <div class="stat-line"><span class="k">Координаты</span><span class="v" id="coordTxt">X: 3.7 · Y: 7.2</span></div>
+                <div class="stat-line"><span class="k">Время на позиции</span><span class="v" id="timeTxt">02:15:47</span></div>
+                <div class="stat-line"><span class="k">Уровень угрозы</span><span class="v green" id="threatTxt">НИЗКИЙ</span></div>
+                <div class="stat-line"><span class="k">Активное задание</span><span class="v" id="taskTxt">ПРОФИЛАКТИЧЕСКИЙ ОБХОД</span></div>
+
+                <button class="btn" style="width: 100%; margin-top: 16px;" onclick="moveUnit()">
+                    ⟳ ОБНОВИТЬ ПОЗИЦИЮ
+                </button>
+                <button class="btn" style="width: 100%; margin-top: 8px;" onclick="showHistory()">
+                    ⌸ ИСТОРИЯ ПЕРЕМЕЩЕНИЙ
+                </button>
+            </div>
+        </div>
+
+        <h3 style="font-family: 'VT323', monospace; color: var(--amber); letter-spacing: 0.15em; margin-top: 26px; text-transform: uppercase;">◈ ПОСЛЕДНИЕ СОБЫТИЯ</h3>
+        <div id="eventLog" style="margin-top: 12px;"></div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div class="modal" id="nationModal">
+    <div class="modal-box">
+        <button class="modal-x" onclick="closeModal('nationModal')">✕</button>
+        <h2>◆ EUSAN NATION · AEON PROTEKTORAT</h2>
+        <p><strong>Юрисдикция:</strong> Единая Нация Эусана</p>
+        <p><strong>Структура:</strong> AEON — вооружённые силы и внутренние подразделения</p>
+        <p><strong>Мандат:</strong> Обеспечение стабильности границ, подавление аномальных проявлений, защита населения</p>
+        <p><strong>Реплики:</strong> Био-механические единицы, созданные на основе нейропаттернов гражданских и военных специалистов</p>
+        <p><strong>Девиз:</strong> Ordnung · Stabilität · Einheit</p>
+        <button class="btn amber" style="margin-top: 16px;" onclick="playBeep()">▶ ВОСПРОИЗВЕСТИ БРИФИНГ</button>
+    </div>
+</div>
+
+<div class="modal" id="consoleModal">
+    <div class="modal-box">
+        <div class="con-head">
+            <div>
+                <h2>⌬ ОПЕРАТИВНАЯ КОНСОЛЬ HABR-RF5-112</h2>
+                <div class="sub">Echtzeit · Kanal 07 · Zugriff SCHNELLE EINGREIFGRUPPE / MED-I</div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn small amber" onclick="refreshAll()">⟳ ОБНОВИТЬ ВСЁ</button>
+                <button class="modal-x" onclick="closeModal('consoleModal')" style="position: static;">✕</button>
+            </div>
+        </div>
+        <div class="con-body" id="consoleBody"></div>
+        <div class="con-foot">
+            <button class="btn" onclick="refreshAll()">⟳ ОБНОВИТЬ ВСЁ</button>
+            <button class="btn" onclick="closeModal('consoleModal')">✕ ЗАКРЫТЬ</button>
+        </div>
+    </div>
+</div>
+
+<audio id="beep" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+const ACCESS_CODE = 'HABR-RF5-112';
+let currentTab = 'overview';
+let opPos = { x: 3, y: 7 };
+let locHistory = [];
+let tlEvents = [];
+let psychUnlocked = false;
+let combatReadyActive = false;
+let musicStarted = false;
+
+const locationsPool = [
+    { obj: "ERES-427", sec: "ROTFRONT · Корпус-6", status: "Профилактический обход" },
+    { obj: "ERES-427", sec: "ROTFRONT · Лазарет A", status: "Плановый осмотр" },
+    { obj: "ERES-427", sec: "ROTFRONT · Палата 4", status: "Стабилизация пациентов" }
+];
+
+const missionsPool = [
+    { name: "ERES-427", prio: "MAXIMAL", progress: 5 },
+    { name: "ПЛАНОВОЕ ОБСЛУЖИВАНИЕ", prio: "MITTEL", progress: 60 }
+];
+
+const psychPool = [
+    "Стабильное, сосредоточенное",
+    "Незначительное напряжение",
+    "Оптимальная боевая готовность",
+    "Повышенная бдительность",
+    "Номинальное оперативное"
+];
+
+/* ============================================================
+   ЗВУК ОТКРЫТИЯ ФАЙЛА — Signalis-style (Web Audio API)
+============================================================ */
+function playTone(ctx, time, freq, duration, vol, type) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'square';
+    osc.frequency.setValueAtTime(freq, time);
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(vol, time + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(time);
+    osc.stop(time + duration + 0.03);
+}
+
+function playFileOpenSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        playTone(ctx, now + 0.00, 2400, 0.020, 0.050, 'square');
+        playTone(ctx, now + 0.01, 1200, 0.040, 0.060, 'square');
+
+        const hum = ctx.createOscillator();
+        const humGain = ctx.createGain();
+        hum.type = 'sawtooth';
+        hum.frequency.setValueAtTime(55, now);
+        hum.frequency.linearRampToValueAtTime(78, now + 0.7);
+        humGain.gain.setValueAtTime(0, now + 0.02);
+        humGain.gain.linearRampToValueAtTime(0.035, now + 0.10);
+        humGain.gain.linearRampToValueAtTime(0, now + 0.85);
+        hum.connect(humGain);
+        humGain.connect(ctx.destination);
+        hum.start(now + 0.02);
+        hum.stop(now + 0.90);
+
+        const beeps = [
+            { t: 0.15, f: 880  },
+            { t: 0.26, f: 1100 },
+            { t: 0.37, f: 1320 },
+            { t: 0.48, f: 1100 },
+            { t: 0.59, f: 988  }
+        ];
+        beeps.forEach(b => playTone(ctx, now + b.t, b.f, 0.055, 0.055, 'square'));
+
+        playTone(ctx, now + 0.75, 330, 0.18, 0.060, 'triangle');
+        playTone(ctx, now + 0.78, 220, 0.22, 0.050, 'triangle');
+    } catch (e) {
+        console.warn('Звук не воспроизведён:', e);
+    }
+}
+
+/* ============================================================
+   ФОНОВАЯ МУЗЫКА
+============================================================ */
+function startBgMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+
+    const audio = document.getElementById('bgMusic');
+    if (!audio) return;
+
+    audio.volume = 0.8;
+
+    const tryPlay = audio.play();
+    if (tryPlay && typeof tryPlay.then === 'function') {
+        tryPlay.then(() => {
+            console.log('▶ Музыка запущена');
+        }).catch(err => {
+            console.warn('▶ Ошибка автовоспроизведения:', err);
+            const resumeOnce = () => {
+                audio.play().catch(() => {});
+                document.removeEventListener('click', resumeOnce);
+                document.removeEventListener('keydown', resumeOnce);
+            };
+            document.addEventListener('click', resumeOnce, { once: true });
+            document.addEventListener('keydown', resumeOnce, { once: true });
+        });
+    }
+}
+
+/* ============================================================
+   GIF ПЕРЕХОД
+============================================================ */
+function playGifTransition() {
+    const gif = document.getElementById('gifTransition');
+    gif.classList.add('on');
+    gif.style.opacity = '0';
+    requestAnimationFrame(() => {
+        gif.style.transition = 'opacity 0.4s ease-out';
+        gif.style.opacity = '1';
+    });
+}
+
+function endGifTransition() {
+    const gif = document.getElementById('gifTransition');
+    gif.style.transition = 'opacity 0.8s ease-in';
+    gif.style.opacity = '0';
+    setTimeout(() => {
+        gif.classList.remove('on');
+        gif.style.transition = '';
+        gif.style.opacity = '0';
+    }, 800);
+}
+
+/* ============================================================
+   ATMOSPHERIC EFFECTS
+============================================================ */
+function initAtmos() {
+    setInterval(() => {
+        if (Math.random() > 0.82) flashGlitch();
+        if (Math.random() > 0.9)  shakeScreen();
+        if (Math.random() > 0.93) flickerLed();
+    }, 2200);
+}
+
+function flashGlitch() {
+    const f = document.getElementById('glitchFlash');
+    f.classList.remove('active');
+    void f.offsetWidth;
+    f.classList.add('active');
+}
+
+function shakeScreen() {
+    const s = document.getElementById('shell');
+    s.classList.add('shake');
+    setTimeout(() => s.classList.remove('shake'), 160);
+}
+
+function flickerLed() {
+    const led = document.getElementById('stateLed');
+    if (!led) return;
+    led.style.opacity = '0.2';
+    setTimeout(() => led.style.opacity = '1', 120);
+}
+
+/* ============================================================
+   BOOT / PASSWORD
+============================================================ */
+function onPwKey(e) {
+    if (e.key === 'Enter') { checkPw(); return; }
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const c = document.createElement('div');
+        c.className = 'char-float';
+        c.textContent = '•';
+        const r = e.target.getBoundingClientRect();
+        c.style.left = (r.left + Math.random() * r.width) + 'px';
+        c.style.top  = (r.top - 20 + Math.random() * 20) + 'px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 900);
+        if (Math.random() > 0.85) flashGlitch();
+    }
+}
+
+function checkPw() {
+    const input = document.getElementById('pwInput');
+    const warn  = document.getElementById('bootWarn');
+    const boot  = document.getElementById('bootScreen');
+    const shell = document.getElementById('shell');
+
+    if (input.value.toUpperCase().trim() === ACCESS_CODE) {
+        warn.classList.remove('on');
+
+        // 0) Звук открытия файла (Signalis-style)
+        playFileOpenSound();
+
+        // 1) GIF на весь экран
+        playGifTransition();
+
+        // 2) Музыка
+        startBgMusic();
+
+        // 3) Через 3 сек скрываем boot-экран, показываем shell и убираем GIF
+        setTimeout(() => {
+            boot.classList.add('hidden');
+            setTimeout(() => boot.style.display = 'none', 400);
+            shell.classList.add('visible');
+            initAtmos();
+            initTimeline();
+            initStats();
+            initMap();
+            endGifTransition();
+        }, 3000);
+    } else {
+        warn.classList.add('on');
+        input.value = '';
+        flashGlitch();
+        shakeScreen();
+    }
+}
+
+/* ============================================================
+   LOCKED SECTION
+============================================================ */
+function tryUnlockPsych() {
+    if (psychUnlocked) {
+        showInfo('psych');
+        return;
+    }
+    const code = prompt(
+        '◈ ЗАКРЫТЫЙ РАЗДЕЛ · СОСТОЯНИЕ СЛЕПКА\n' +
+        '─────────────────────────────────\n' +
+        'ВВЕДИТЕ КОД ДОСТУПА:'
+    );
+    if (code === null) return;
+
+    if (code.toUpperCase().trim() === ACCESS_CODE) {
+        psychUnlocked = true;
+        const btn  = document.getElementById('psychBtn');
+        const tabB = document.getElementById('psychTabBtn');
+        if (btn)  { btn.classList.remove('locked'); btn.innerHTML = '✚ СОСТОЯНИЕ СЛЕПКА'; }
+        if (tabB) { tabB.classList.remove('locked'); tabB.innerHTML = 'СЛЕПОК'; }
+        const sp = document.getElementById('statPsych');
+        if (sp) sp.textContent = '88%';
+        const sd = document.getElementById('statPsychDesc');
+        if (sd) sd.textContent = 'НОМИНАЛЬНО';
+
+        playBeep();
+        showInfo('psych');
+    } else {
+        alert('◈ ДОСТУП ЗАПРЕЩЁН\n\nНеверный код. Инцидент зафиксирован.');
+        flashGlitch();
+        shakeScreen();
+    }
+}
+
+function playBeep() {
+    try {
+        const b = document.getElementById('beep');
+        b.currentTime = 0;
+        b.play();
+    } catch(e) {}
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+function changeTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+    const tb = document.querySelector(`.tab[data-tab="${name}"]`);
+    if (tb) tb.classList.add('active');
+    const sec = document.getElementById(name);
+    if (sec) sec.classList.add('active');
+
+    currentTab = name;
+    if (name === 'timeline') initTimeline();
+    if (name === 'stats')    initStats();
+    if (name === 'location') initMap();
+    if (Math.random() > 0.7) flashGlitch();
+}
+
+/* ============================================================
+   TIMELINE
+============================================================ */
+function initTimeline() {
+    const box = document.getElementById('tlBox');
+    box.innerHTML = '';
+
+    const events = [
+        { date: '2155-12-26', title: 'АКТИВАЦИЯ КАК HABR', desc: 'Формирование нейропаттерна HABR-RF5-112. Присвоен серийный номер HABR-R632-112GAMMA CENTAVRA.', high: false },
+        { date: '2156-03-15', title: 'ПЕРВОЕ КРУПНОЕ ВМЕШАТЕЛЬСТВО', desc: 'Массовая стабилизация пациентов в учебном лазарете медицинского корпуса. 24 спасённых жизни за 6 часов.', high: true },
+        { date: '2156-07-22', title: 'СЛОЖНОЕ ХИРУРГИЧЕСКОЕ ВМЕШАТЕЛЬСТВО', desc: 'Первая самостоятельная операция повышенной сложности. Успешное завершение, благодарность от куратора.', high: false },
+        { date: '2156-11-08', title: 'ПЛАНОВАЯ ПРОВЕРКА KAHR', desc: 'Успешное прохождение инспекции KAHR без замечаний. Показатели целостности слепка — в норме.', high: false },
+        { date: '2157-01-19', title: 'ПОДТВЕРЖДЕНИЕ MED-I', desc: 'Присвоен уровень доступа MED-I после серии безупречных вмешательств.', high: true },
+        { date: '2157-03-05', title: 'ПРИПИСАН К ERES-427', desc: 'Переведён на постоянное назначение в лазаретный корпус ERES-427. Начало службы на объекте.', high: true }
+    ];
+
+    tlEvents = events;
+
+    events.forEach((ev, i) => {
+        const item = document.createElement('div');
+        item.className = 'tl-item';
+        item.innerHTML = `
+            <div class="tl-card" onclick="showEvent(${i})">
+                <h4>${ev.date}</h4>
+                <h3 class="${ev.high ? 'high' : ''}">${ev.title}</h3>
+                <p>${ev.desc}</p>
+            </div>
+        `;
+        box.appendChild(item);
+        setTimeout(() => item.classList.add('on'), i * 180);
+    });
+}
+
+function addTl() {
+    const date  = prompt('Дата (ГГГГ-ММ-ДД):', '2157-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0'));
+    const title = prompt('Название:', 'Новое вмешательство');
+    const desc  = prompt('Описание:', 'Вмешательство завершено успешно');
+    if (date && title && desc) {
+        tlEvents.push({ date, title, desc, high: false });
+        initTimeline();
+        playBeep();
+    }
+}
+
+function exportTl() {
+    let txt = 'ХРОНОЛОГИЯ HABR-RF5-112\n\n';
+    tlEvents.forEach(e => txt += `${e.date} — ${e.title}\n${e.desc}\n\n`);
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'habr-rf5-112-chronologie.txt';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function showEvent(i) {
+    const e = tlEvents[i];
+    alert(`${e.date}\n\n${e.title}\n\n${e.desc}`);
+    flashGlitch();
+}
+
+/* ============================================================
+   STATS
+============================================================ */
+function initStats() {
+    const box = document.getElementById('chartBox');
+    box.innerHTML = '';
+    const data = [
+        { l: 'Лазарет',   v: 128, c: '#c8912c' },
+        { l: 'Стабилиз.', v: 42,  c: '#a82a2a' },
+        { l: 'Ампутации', v: 18,  c: '#7a5a18' },
+        { l: 'Полевые',   v: 14,  c: '#6d8a5e' }
+    ];
+    const max = Math.max(...data.map(d => d.v));
+    data.forEach((d, i) => {
+        const wrap = document.createElement('div');
+        const bar  = document.createElement('div');
+        bar.className = 'chart-bar';
+        bar.style.height = (d.v / max * 150) + 'px';
+        bar.style.transitionDelay = (i * 0.08) + 's';
+        bar.style.background = `linear-gradient(180deg, ${d.c}, var(--rust))`;
+        const lbl = document.createElement('div');
+        lbl.className = 'chart-label';
+        lbl.textContent = d.l;
+        wrap.appendChild(bar);
+        wrap.appendChild(lbl);
+        box.appendChild(wrap);
+    });
+}
+
+/* ============================================================
+   MAP
+============================================================ */
+function initMap() {
+    const box = document.getElementById('mapBox');
+    box.innerHTML = '';
+    const g = document.createElement('div');
+    g.className = 'map-grid';
+    for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
+            const cell = document.createElement('div');
+            if ((r === 3 && c >= 2 && c <= 8) || (c === 5 && r >= 1 && r <= 8)) cell.classList.add('path');
+            if ((r === 2 && c === 2) || (r === 8 && c === 8)) cell.classList.add('room');
+            if (r === 9 && c === 9) cell.classList.add('danger');
+            g.appendChild(cell);
+        }
+    }
+    box.appendChild(g);
+    drawDot();
+    updPosInfo();
+}
+
+function drawDot() {
+    const box = document.getElementById('mapBox');
+    const old = document.querySelector('.unit-dot');
+    if (old) old.remove();
+    const dot = document.createElement('div');
+    dot.className = 'unit-dot';
+    const cs = 40;
+    dot.style.left = (opPos.x * cs + cs / 2) + 'px';
+    dot.style.top  = (opPos.y * cs + cs / 2) + 'px';
+    box.appendChild(dot);
+}
+
+function moveUnit() {
+    const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+    const d = dirs[Math.floor(Math.random() * dirs.length)];
+    opPos.x = Math.max(0, Math.min(9, opPos.x + d.x));
+    opPos.y = Math.max(0, Math.min(9, opPos.y + d.y));
+    drawDot();
+    updPosInfo();
+    addEvent(`Перемещение · X:${opPos.x} · Y:${opPos.y}`);
+    locHistory.push({ t: new Date().toLocaleTimeString(), x: opPos.x, y: opPos.y });
+    playBeep();
+    if (Math.random() > 0.5) flashGlitch();
+}
+
+function updPosInfo() {
+    document.getElementById('coordTxt').textContent = `X: ${opPos.x}.${Math.floor(Math.random()*10)} · Y: ${opPos.y}.${Math.floor(Math.random()*10)}`;
+    const t = document.getElementById('timeTxt');
+    const parts = t.textContent.split(':').map(n => parseInt(n) || 0);
+    let [h, m, s] = parts;
+    s += 30;
+    if (s >= 60) { s = 0; m++; }
+    if (m >= 60) { m = 0; h++; }
+    t.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    const threat = document.getElementById('threatTxt');
+    threat.textContent = 'НИЗКИЙ';
+    threat.className = 'v green';
+
+    document.getElementById('taskTxt').textContent = 'ПРОФИЛАКТИЧЕСКИЙ ОБХОД';
+}
+
+function addEvent(txt) {
+    const log = document.getElementById('eventLog');
+    if (!log) return;
+    const el = document.createElement('div');
+    el.className = 'log-entry';
+    el.innerHTML = `<span class="log-t">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span><span class="log-c">${txt}</span>`;
+    log.insertBefore(el, log.firstChild);
+    while (log.children.length > 6) log.removeChild(log.lastChild);
+}
+
+function showHistory() {
+    let txt = 'ИСТОРИЯ ПЕРЕМЕЩЕНИЙ:\n\n';
+    locHistory.slice(-10).forEach((h, i) => txt += `${i+1}. ${h.t} — X:${h.x} Y:${h.y}\n`);
+    alert(txt);
+    flashGlitch();
+}
+
+/* ============================================================
+   OVERVIEW
+============================================================ */
+function showInfo(type) {
+    const block = document.getElementById('infoBlock');
+    block.style.display = 'block';
+    document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
+    const t = document.getElementById(type + 'Info');
+    if (t) t.style.display = 'block';
+    playBeep();
+    flashGlitch();
+}
+
+function changeInfo(type) {
+    document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
+    const t = document.getElementById(type + 'Info');
+    if (t) t.style.display = 'block';
+    playBeep();
+}
+
+function updateStatus() {
+    const loc = document.getElementById('posTxt');
+    const task = document.getElementById('taskTxt');
+    if (loc) loc.textContent = 'ERES-427 · ROTFRONT';
+    if (task) task.textContent = 'ПРОФИЛАКТИЧЕСКИЙ ОБХОД';
+    playBeep();
+    flashGlitch();
+}
+
+/* ============================================================
+   ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ
+============================================================ */
+function combatReady() {
+    playBeep();
+    if (combatReadyActive) {
+        if (confirm('◈ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ УЖЕ АКТИВЕН.\n\nСнять режим и вернуться в штатный?')) {
+            deactivateCombat();
+        }
+        return;
+    }
+    if (confirm('⚔ АКТИВИРОВАТЬ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ?\n\nМодуль будет переведён в режим повышенной готовности.\nЛазаретный режим приостановлен, сенсоры активны.')) {
+        activateCombat();
+    }
+}
+
+function activateCombat() {
+    combatReadyActive = true;
+    const stateTxt = document.getElementById('stateTxt');
+    const led = document.getElementById('stateLed');
+    stateTxt.innerHTML = '<span style="color: var(--amber)">БОЕВАЯ ГОТОВНОСТЬ · АКТИВНА</span>';
+    led.className = 'led amber';
+
+    playBeep();
+    flashGlitch();
+    shakeScreen();
+
+    addEvent('◈ Протокол боевой готовности активирован');
+
+    let n = 0;
+    const int = setInterval(() => {
+        flashGlitch();
+        n++;
+        if (n > 6) clearInterval(int);
+    }, 240);
+}
+
+function deactivateCombat() {
+    combatReadyActive = false;
+    const stateTxt = document.getElementById('stateTxt');
+    const led = document.getElementById('stateLed');
+    stateTxt.textContent = 'STABIL · BEREIT';
+    led.className = 'led';
+    playBeep();
+    addEvent('◈ Протокол боевой готовности снят · штатный режим');
+}
+
+/* ============================================================
+   MODALS
+============================================================ */
+function openModal(id) {
+    document.getElementById(id).classList.add('on');
+    playBeep();
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('on');
+    playBeep();
+}
+
+/* ============================================================
+   OPERATIVE CONSOLE
+============================================================ */
+function openConsole() {
+    renderConsole();
+    openModal('consoleModal');
+}
+
+function renderConsole() {
+    const body = document.getElementById('consoleBody');
+    const loc = locationsPool[Math.floor(Math.random() * locationsPool.length)];
+    const psych = psychPool[Math.floor(Math.random() * psychPool.length)];
+
+    const psychSection = psychUnlocked ? `
+        <div class="con-card">
+            <h3>НЕЙРОПАТТЕРН</h3>
+            <div class="metric">
+                <div class="mrow"><span class="k">Стрессоустойчивость</span><span class="v" id="cStressV">87%</span></div>
+                <div class="mbar"><i id="cStressB" style="width: 87%"></i></div>
+            </div>
+            <div class="metric">
+                <div class="mrow"><span class="k">Когнитивная функция</span><span class="v" id="cCogV">91%</span></div>
+                <div class="mbar"><i id="cCogB" style="width: 91%"></i></div>
+            </div>
+            <div class="metric">
+                <div class="mrow"><span class="k">Эмоц. контроль</span><span class="v" id="cEmoV">84%</span></div>
+                <div class="mbar"><i id="cEmoB" style="width: 84%"></i></div>
+            </div>
+            <div class="row"><span class="lbl">Состояние:</span><span class="val" id="cPsych">${psych}</span></div>
+            <div class="row"><span class="lbl">Рекомендация:</span><span class="val">Стандартный режим</span></div>
+            <div class="row"><span class="lbl">Последний сеанс:</span><span class="val">48ч назад</span></div>
+            <button class="btn small" style="margin-top: 12px;" onclick="refreshPsych()">⟳ ОБНОВИТЬ</button>
+            <div style="text-align: right; color: var(--bone-dark); font-size: 0.72em; margin-top: 8px;">
+                ОБНОВЛЕНО: <span id="cPsychTime">${new Date().toLocaleTimeString()}</span>
+            </div>
+        </div>
+    ` : `
+        <div class="con-card locked">
+            <h3>🔒 НЕЙРОПАТТЕРН</h3>
+            <div class="locked-inner">
+                <div class="lic">🔒</div>
+                РАЗДЕЛ ЗАЩИЩЁН<br>
+                ТРЕБУЕТСЯ КОД ДОСТУПА<br><br>
+                <button class="btn small locked" onclick="tryUnlockPsychFromConsole()">ВВЕСТИ КОД</button>
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = `
+        <div class="con-grid">
+            <div class="con-card">
+                <h3>ПОЗИЦИЯ</h3>
+                <div class="row"><span class="lbl">Объект:</span><span class="val amber" id="cObj">ERES-427</span></div>
+                <div class="row"><span class="lbl">Сектор:</span><span class="val" id="cSec">${loc.sec}</span></div>
+                <div class="row"><span class="lbl">Координаты:</span><span class="val" id="cCoord">X: 3.7 · Y: 7.2 · Z: -1.3</span></div>
+                <div class="row"><span class="lbl">Патруль:</span><span class="val green" id="cPatrol">${loc.status}</span></div>
+                <div class="row"><span class="lbl">След. связь:</span><span class="val" id="cNext">01:15:30</span></div>
+                <button class="btn small" style="margin-top: 12px;" onclick="refreshLoc()">⟳ ОБНОВИТЬ</button>
+                <div style="text-align: right; color: var(--bone-dark); font-size: 0.72em; margin-top: 8px;">
+                    ОБНОВЛЕНО: <span id="cLocTime">${new Date().toLocaleTimeString()}</span>
+                </div>
+            </div>
+
+            <div class="con-card">
+                <h3>БИО-МОНИТОРИНГ</h3>
+                <div class="vitals">
+                    <div class="vital"><div class="vlbl">ПУЛЬС</div><div class="vval" id="cHR">68</div><div class="vunit">УД/МИН</div></div>
+                    <div class="vital"><div class="vlbl">ДАВЛЕНИЕ</div><div class="vval" id="cBP">120/80</div><div class="vunit">ММ РТ.СТ.</div></div>
+                    <div class="vital"><div class="vlbl">ТЕМП.</div><div class="vval" id="cT">36.6</div><div class="vunit">°C</div></div>
+                    <div class="vital"><div class="vlbl">SAT O₂</div><div class="vval" id="cO2">98%</div><div class="vunit">O₂</div></div>
+                </div>
+                <div class="metric">
+                    <div class="mrow"><span class="k">Общее состояние</span><span class="v" id="cHealthTxt">92%</span></div>
+                    <div class="mbar"><i id="cHealthBar" style="width: 92%"></i></div>
+                </div>
+                <div class="row"><span class="lbl">Повреждения:</span><span class="val" id="cInj">Незначительные</span></div>
+                <div class="row"><span class="lbl">Препараты:</span><span class="val" id="cMed">Анальгетик (низк.)</span></div>
+                <button class="btn small" style="margin-top: 12px;" onclick="refreshMed()">⟳ ОБНОВИТЬ</button>
+                <div style="text-align: right; color: var(--bone-dark); font-size: 0.72em; margin-top: 8px;">
+                    ОБНОВЛЕНО: <span id="cMedTime">${new Date().toLocaleTimeString()}</span>
+                </div>
+            </div>
+
+            ${psychSection}
+
+            <div class="con-card">
+                <h3>АКТИВНЫЕ НАЗНАЧЕНИЯ</h3>
+                <div id="cMissions">
+                    ${missionsPool.map(m => `
+                        <div class="mission-row">
+                            <div class="mt">${m.name}</div>
+                            <div class="row"><span class="lbl">Приоритет:</span><span class="val ${m.prio === 'MAXIMAL' ? 'red' : m.prio === 'MITTEL' ? 'warn' : 'green'}">${m.prio}</span></div>
+                            <div class="row"><span class="lbl">Прогресс:</span><span class="val">${m.progress}%</span></div>
+                            <div class="mp"><i style="width: ${m.progress}%"></i></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn small" style="margin-top: 12px;" onclick="refreshMissions()">⟳ ОБНОВИТЬ</button>
+                <div style="text-align: right; color: var(--bone-dark); font-size: 0.72em; margin-top: 8px;">
+                    ОБНОВЛЕНО: <span id="cMisTime">${new Date().toLocaleTimeString()}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function tryUnlockPsychFromConsole() {
+    if (psychUnlocked) {
+        renderConsole();
+        return;
+    }
+    const code = prompt(
+        '◈ ЗАКРЫТЫЙ РАЗДЕЛ · НЕЙРОПАТТЕРН\n' +
+        '─────────────────────────────────\n' +
+        'ВВЕДИТЕ КОД ДОСТУПА:'
+    );
+    if (code === null) return;
+
+    if (code.toUpperCase().trim() === ACCESS_CODE) {
+        psychUnlocked = true;
+        const btn  = document.getElementById('psychBtn');
+        const tabB = document.getElementById('psychTabBtn');
+        if (btn)  { btn.classList.remove('locked'); btn.innerHTML = '✚ СОСТОЯНИЕ СЛЕПКА'; }
+        if (tabB) { tabB.classList.remove('locked'); tabB.innerHTML = 'СЛЕПОК'; }
+        const sp = document.getElementById('statPsych');
+        if (sp) sp.textContent = '88%';
+        const sd = document.getElementById('statPsychDesc');
+        if (sd) sd.textContent = 'НОМИНАЛЬНО';
+
+        playBeep();
+        renderConsole();
+    } else {
+        alert('◈ ДОСТУП ЗАПРЕЩЁН\n\nНеверный код. Инцидент зафиксирован.');
+        flashGlitch();
+        shakeScreen();
+    }
+}
+
+function refreshLoc() {
+    const l = locationsPool[Math.floor(Math.random() * locationsPool.length)];
+    document.getElementById('cObj').textContent = 'ERES-427';
+    document.getElementById('cSec').textContent = l.sec;
+    document.getElementById('cPatrol').textContent = l.status;
+    document.getElementById('cLocTime').textContent = new Date().toLocaleTimeString();
+    playBeep();
+}
+function refreshMed() {
+    document.getElementById('cHR').textContent = Math.floor(Math.random()*20)+65;
+    document.getElementById('cBP').textContent = `${Math.floor(Math.random()*20)+110}/${Math.floor(Math.random()*10)+70}`;
+    document.getElementById('cT').textContent = (36.5 + Math.random()*0.5).toFixed(1);
+    document.getElementById('cO2').textContent = (Math.floor(Math.random()*3)+97) + '%';
+    document.getElementById('cMedTime').textContent = new Date().toLocaleTimeString();
+    playBeep();
+}
+function refreshPsych() {
+    if (!psychUnlocked) return;
+    const s = Math.floor(Math.random()*11)+85;
+    const c = Math.floor(Math.random()*11)+85;
+    const e = Math.floor(Math.random()*11)+80;
+    const sv = document.getElementById('cStressV');
+    const sb = document.getElementById('cStressB');
+    const cv = document.getElementById('cCogV');
+    const cb = document.getElementById('cCogB');
+    const ev = document.getElementById('cEmoV');
+    const eb = document.getElementById('cEmoB');
+    if (sv) { sv.textContent = s + '%'; sb.style.width = s + '%'; }
+    if (cv) { cv.textContent = c + '%'; cb.style.width = c + '%'; }
+    if (ev) { ev.textContent = e + '%'; eb.style.width = e + '%'; }
+    const pt = document.getElementById('cPsychTime');
+    if (pt) pt.textContent = new Date().toLocaleTimeString();
+    playBeep();
+}
+function refreshMissions() {
+    document.getElementById('cMisTime').textContent = new Date().toLocaleTimeString();
+    playBeep();
+}
+function refreshAll() {
+    refreshLoc();
+    refreshMed();
+    refreshPsych();
+    refreshMissions();
+    playBeep();
+}
+
+/* ============================================================
+   INIT + ЗАЩИТА ОТ РЕДАКТИРОВАНИЯ
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'})));
+
+    document.querySelectorAll('.rel-note').forEach(n => {
+        n.addEventListener('keydown', e => e.preventDefault());
+        n.addEventListener('paste', e => e.preventDefault());
+        n.addEventListener('cut', e => e.preventDefault());
+        n.addEventListener('drop', e => e.preventDefault());
+        n.addEventListener('mousedown', e => e.preventDefault());
+        n.addEventListener('selectstart', e => e.preventDefault());
+    });
+
+    document.querySelectorAll('.rel-tag-select').forEach(s => {
+        s.addEventListener('mousedown', e => e.preventDefault());
+        s.addEventListener('keydown', e => e.preventDefault());
+        s.addEventListener('click', e => e.preventDefault());
+    });
+});
+</script>
+</body>
+</html>
