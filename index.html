@@ -273,7 +273,6 @@
     .led.red { background: var(--rust-bright); box-shadow: 0 0 8px var(--rust-bright); animation-duration: 1s; }
     @keyframes led { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    /* ---------- РЕГУЛЯТОР ГРОМКОСТИ ---------- */
     .vol-ctrl {
         display: flex;
         align-items: center;
@@ -1031,7 +1030,6 @@
     }
     .doc-sign .sig { color: var(--amber); }
 
-    /* Стили для видео в модальном окне брифинга */
     .briefing-box {
         max-width: 92%;
         width: 92%;
@@ -1148,7 +1146,6 @@
                 ⌬ KONSOLE
             </button>
 
-            <!-- РЕГУЛЯТОР ГРОМКОСТИ -->
             <div class="vol-ctrl" title="Громкость музыки">
                 <span class="vol-icon" id="volIcon" onclick="toggleMute()">♪</span>
                 <input type="range" id="volumeSlider" min="0" max="100" step="1" value="80"
@@ -1826,12 +1823,6 @@
     </div>
 </div>
 
-<!-- ================= BRIEFING VIDEO MODAL ================= -->
-<!-- 
-    ВАЖНО: атрибут autoplay УДАЛЁН. Видео НЕ будет воспроизводиться автоматически при загрузке страницы.
-    Воспроизведение запускается только через функцию playBriefing() по клику на кнопку.
-    preload="metadata" — подгружает только метаданные (длительность, размер), не сам поток.
--->
 <div class="modal" id="briefingModal">
     <div class="modal-box briefing-box">
         <button class="modal-x" onclick="closeBriefing()">✕</button>
@@ -1865,10 +1856,6 @@
         </div>
     </div>
 </div>
-
-<audio id="beep" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
-</audio>
 
 <script>
 /* ============================================================
@@ -1907,59 +1894,309 @@ const psychPool = [
 ];
 
 /* ============================================================
-   ЗВУК ОТКРЫТИЯ ФАЙЛА — Signalis-style (Web Audio API)
+   УНИВЕРСАЛЬНЫЙ СИНТЕЗАТОР ЗВУКОВ — Web Audio API
 ============================================================ */
-function playTone(ctx, time, freq, duration, vol, type) {
+let _audioCtx = null;
+
+function getAudioCtx() {
+    try {
+        if (!_audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            _audioCtx = new AudioCtx();
+        }
+        if (_audioCtx.state === 'suspended') {
+            _audioCtx.resume().catch(() => {});
+        }
+        return _audioCtx;
+    } catch (e) {
+        return null;
+    }
+}
+
+/* Дисторшн-кривая для WaveShaperNode — делает звук жёстким и грязным */
+function makeDistortionCurve(amount) {
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < samples; i++) {
+        const x = (i * 2) / samples - 1;
+        curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+    }
+    return curve;
+}
+
+/* Генератор шумового буфера — для резких «ударов» и «лязга» */
+function createNoiseBuffer(ctx, duration) {
+    const size = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < size; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+}
+
+function synthTone(freq, duration, vol, type, delay) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + (delay || 0);
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type || 'square';
-    osc.frequency.setValueAtTime(freq, time);
-    gain.gain.setValueAtTime(0, time);
-    gain.gain.linearRampToValueAtTime(vol, time + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.start(time);
-    osc.stop(time + duration + 0.03);
+    osc.start(t);
+    osc.stop(t + duration + 0.05);
 }
 
-function playFileOpenSound() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const now = ctx.currentTime;
+function synthSweep(freqStart, freqEnd, duration, vol, type, delay) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + (delay || 0);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sawtooth';
+    osc.frequency.setValueAtTime(freqStart, t);
+    osc.frequency.linearRampToValueAtTime(freqEnd, t + duration);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration + 0.05);
+}
 
-        playTone(ctx, now + 0.00, 2400, 0.020, 0.050, 'square');
-        playTone(ctx, now + 0.01, 1200, 0.040, 0.060, 'square');
+/* ============================================================
+   ЩЕЛЧОК ВКЛАДКИ — грубый, с лязгом металла
+============================================================ */
+function playClickSound() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime;
 
-        const hum = ctx.createOscillator();
-        const humGain = ctx.createGain();
-        hum.type = 'sawtooth';
-        hum.frequency.setValueAtTime(55, now);
-        hum.frequency.linearRampToValueAtTime(78, now + 0.7);
-        humGain.gain.setValueAtTime(0, now + 0.02);
-        humGain.gain.linearRampToValueAtTime(0.035, now + 0.10);
-        humGain.gain.linearRampToValueAtTime(0, now + 0.85);
-        hum.connect(humGain);
-        humGain.connect(ctx.destination);
-        hum.start(now + 0.02);
-        hum.stop(now + 0.90);
+    // Резкий шумовой удар (лязг)
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 0.05);
+    const nFilter = ctx.createBiquadFilter();
+    nFilter.type = 'bandpass';
+    nFilter.frequency.value = 2200;
+    nFilter.Q.value = 2.0;
+    const nGain = ctx.createGain();
+    nGain.gain.setValueAtTime(0.10, t);
+    nGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    noise.connect(nFilter);
+    nFilter.connect(nGain);
+    nGain.connect(ctx.destination);
+    noise.start(t);
+    noise.stop(t + 0.05);
 
-        const beeps = [
-            { t: 0.15, f: 880  },
-            { t: 0.26, f: 1100 },
-            { t: 0.37, f: 1320 },
-            { t: 0.48, f: 1100 },
-            { t: 0.59, f: 988  }
-        ];
-        beeps.forEach(b => playTone(ctx, now + b.t, b.f, 0.055, 0.055, 'square'));
+    // Грубый падающий тон с дисторшном
+    const dist = ctx.createWaveShaper();
+    dist.curve = makeDistortionCurve(45);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1700, t);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.07);
+    g.gain.setValueAtTime(0.10, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    osc.connect(dist);
+    dist.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.09);
+}
 
-        playTone(ctx, now + 0.75, 330, 0.18, 0.060, 'triangle');
-        playTone(ctx, now + 0.78, 220, 0.22, 0.050, 'triangle');
-    } catch (e) {
-        console.warn('Звук не воспроизведён:', e);
+/* ============================================================
+   КЛИК ДЛЯ МОДАЛЬНЫХ ОКОН — грубый отклик
+============================================================ */
+function playModalSound() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+
+    const dist = ctx.createWaveShaper();
+    dist.curve = makeDistortionCurve(55);
+    dist.connect(ctx.destination);
+
+    const o1 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    o1.type = 'sawtooth';
+    o1.frequency.setValueAtTime(880, t);
+    o1.frequency.exponentialRampToValueAtTime(420, t + 0.09);
+    g1.gain.setValueAtTime(0.09, t);
+    g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+    o1.connect(dist);
+    g1.connect ? null : null;
+    o1.connect(g1);
+    g1.connect(ctx.destination);
+    o1.start(t);
+    o1.stop(t + 0.11);
+
+    const o2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    o2.type = 'square';
+    o2.frequency.setValueAtTime(1320, t);
+    o2.frequency.exponentialRampToValueAtTime(620, t + 0.08);
+    g2.gain.setValueAtTime(0.06, t);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o2.connect(dist);
+    g2.gain.value = g2.gain.value;
+    o2.connect(g2);
+    g2.connect(ctx.destination);
+    o2.start(t);
+    o2.stop(t + 0.10);
+}
+
+/* ============================================================
+   ТРЕВОГА — низкая, жестокая, угрожающая. Промышленный клаксон.
+============================================================ */
+function playAlarmSound() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const dist = ctx.createWaveShaper();
+    dist.curve = makeDistortionCurve(70);
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 950;
+    lp.Q.value = 1.2;
+    dist.connect(lp);
+    lp.connect(ctx.destination);
+
+    const wails = 4;
+    const wailDur = 0.55;
+    const gap = 0.65;
+    for (let i = 0; i < wails; i++) {
+        const t = now + i * gap;
+
+        const o1 = ctx.createOscillator();
+        const g1 = ctx.createGain();
+        o1.type = 'sawtooth';
+        o1.frequency.setValueAtTime(95, t);
+        o1.frequency.linearRampToValueAtTime(38, t + wailDur * 0.55);
+        o1.frequency.linearRampToValueAtTime(72, t + wailDur);
+        g1.gain.setValueAtTime(0.0001, t);
+        g1.gain.linearRampToValueAtTime(0.11, t + 0.03);
+        g1.gain.setValueAtTime(0.11, t + wailDur - 0.15);
+        g1.gain.linearRampToValueAtTime(0.0001, t + wailDur);
+        o1.connect(g1);
+        g1.connect(dist);
+        o1.start(t);
+        o1.stop(t + wailDur + 0.05);
+
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.type = 'square';
+        o2.frequency.setValueAtTime(63, t);
+        o2.frequency.linearRampToValueAtTime(26, t + wailDur * 0.55);
+        o2.frequency.linearRampToValueAtTime(48, t + wailDur);
+        g2.gain.setValueAtTime(0.0001, t);
+        g2.gain.linearRampToValueAtTime(0.075, t + 0.03);
+        g2.gain.linearRampToValueAtTime(0.0001, t + wailDur);
+        o2.connect(g2);
+        g2.connect(dist);
+        o2.start(t);
+        o2.stop(t + wailDur + 0.05);
     }
+
+    const sub = ctx.createOscillator();
+    const subG = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(32, now);
+    sub.frequency.linearRampToValueAtTime(24, now + wails * gap);
+    subG.gain.setValueAtTime(0.0001, now);
+    subG.gain.linearRampToValueAtTime(0.11, now + 0.2);
+    subG.gain.setValueAtTime(0.11, now + wails * gap - 0.3);
+    subG.gain.linearRampToValueAtTime(0.0001, now + wails * gap);
+    sub.connect(subG);
+    subG.connect(ctx.destination);
+    sub.start(now);
+    sub.stop(now + wails * gap + 0.1);
+
+    const finalT = now + wails * gap;
+    const hit = ctx.createOscillator();
+    const hitG = ctx.createGain();
+    hit.type = 'sawtooth';
+    hit.frequency.setValueAtTime(140, finalT);
+    hit.frequency.exponentialRampToValueAtTime(28, finalT + 0.55);
+    hitG.gain.setValueAtTime(0.0001, finalT);
+    hitG.gain.linearRampToValueAtTime(0.15, finalT + 0.02);
+    hitG.gain.exponentialRampToValueAtTime(0.0001, finalT + 0.65);
+    hit.connect(hitG);
+    hitG.connect(dist);
+    hit.start(finalT);
+    hit.stop(finalT + 0.7);
+}
+
+/* ============================================================
+   ОШИБКА — два жёстких удара + низкое рычание
+============================================================ */
+function playErrorSound() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const dist = ctx.createWaveShaper();
+    dist.curve = makeDistortionCurve(90);
+    dist.connect(ctx.destination);
+
+    [0, 0.15].forEach(off => {
+        const t = now + off;
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = createNoiseBuffer(ctx, 0.06);
+        const nG = ctx.createGain();
+        const nF = ctx.createBiquadFilter();
+        nF.type = 'bandpass';
+        nF.frequency.value = 1400;
+        nF.Q.value = 1.5;
+        nG.gain.setValueAtTime(0.09, t);
+        nG.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        noise.connect(nF);
+        nF.connect(nG);
+        nG.connect(ctx.destination);
+        noise.start(t);
+        noise.stop(t + 0.06);
+
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(180, t);
+        osc.frequency.exponentialRampToValueAtTime(55, t + 0.13);
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+        osc.connect(g);
+        g.connect(dist);
+        osc.start(t);
+        osc.stop(t + 0.16);
+    });
+
+    const growl = ctx.createOscillator();
+    const growlG = ctx.createGain();
+    growl.type = 'sawtooth';
+    growl.frequency.setValueAtTime(88, now + 0.32);
+    growl.frequency.linearRampToValueAtTime(28, now + 1.05);
+    growlG.gain.setValueAtTime(0.0001, now + 0.32);
+    growlG.gain.linearRampToValueAtTime(0.09, now + 0.38);
+    growlG.gain.linearRampToValueAtTime(0.0001, now + 1.05);
+    growl.connect(growlG);
+    growlG.connect(dist);
+    growl.start(now + 0.32);
+    growl.stop(now + 1.1);
+}
+
+/* Устаревшая функция — оставлена на случай старых вызовов */
+function playBeep() {
+    playClickSound();
 }
 
 /* ============================================================
@@ -2003,6 +2240,34 @@ function toggleMute() {
     bgMuted = !bgMuted;
     applyVolumeToAudio();
     applyVolumeUI();
+}
+
+/* ============================================================
+   ЗВУК ОТКРЫТИЯ ФАЙЛА — Signalis-style (при вводе пароля)
+============================================================ */
+function playFileOpenSound() {
+    try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+
+        synthTone(2400, 0.020, 0.050, 'square', 0.00);
+        synthTone(1200, 0.040, 0.060, 'square', 0.01);
+        synthSweep(55, 78, 0.70, 0.035, 'sawtooth', 0.02);
+
+        const beeps = [
+            { t: 0.15, f: 880  },
+            { t: 0.26, f: 1100 },
+            { t: 0.37, f: 1320 },
+            { t: 0.48, f: 1100 },
+            { t: 0.59, f: 988  }
+        ];
+        beeps.forEach(b => synthTone(b.f, 0.055, 0.055, 'square', b.t));
+
+        synthTone(330, 0.18, 0.060, 'triangle', 0.75);
+        synthTone(220, 0.22, 0.050, 'triangle', 0.78);
+    } catch (e) {
+        console.warn('Звук не воспроизведён:', e);
+    }
 }
 
 /* ============================================================
@@ -2133,6 +2398,7 @@ function checkPw() {
     } else {
         warn.classList.add('on');
         input.value = '';
+        playErrorSound();
         flashGlitch();
         shakeScreen();
     }
@@ -2164,21 +2430,14 @@ function tryUnlockPsych() {
         const sd = document.getElementById('statPsychDesc');
         if (sd) sd.textContent = 'НОМИНАЛЬНО';
 
-        playBeep();
+        playModalSound();
         showInfo('psych');
     } else {
+        playErrorSound();
         alert('◈ ДОСТУП ЗАПРЕЩЁН\n\nНеверный код. Инцидент зафиксирован.');
         flashGlitch();
         shakeScreen();
     }
-}
-
-function playBeep() {
-    try {
-        const b = document.getElementById('beep');
-        b.currentTime = 0;
-        b.play();
-    } catch(e) {}
 }
 
 /* ============================================================
@@ -2194,6 +2453,8 @@ function changeTab(name) {
     if (sec) sec.classList.add('active');
 
     currentTab = name;
+    playClickSound();
+
     if (name === 'timeline') initTimeline();
     if (name === 'stats')    initStats();
     if (name === 'location') initMap();
@@ -2240,7 +2501,7 @@ function addTl() {
     if (date && title && desc) {
         tlEvents.push({ date, title, desc, high: false });
         initTimeline();
-        playBeep();
+        playClickSound();
     }
 }
 
@@ -2253,10 +2514,12 @@ function exportTl() {
     a.href = url; a.download = 'habr-rf5-112-chronologie.txt';
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
+    playClickSound();
 }
 
 function showEvent(i) {
     const e = tlEvents[i];
+    playModalSound();
     alert(`${e.date}\n\n${e.title}\n\n${e.desc}`);
     flashGlitch();
 }
@@ -2333,7 +2596,7 @@ function moveUnit() {
     updPosInfo();
     addEvent(`Перемещение · X:${opPos.x} · Y:${opPos.y}`);
     locHistory.push({ t: new Date().toLocaleTimeString(), x: opPos.x, y: opPos.y });
-    playBeep();
+    playClickSound();
     if (Math.random() > 0.5) flashGlitch();
 }
 
@@ -2367,6 +2630,7 @@ function addEvent(txt) {
 function showHistory() {
     let txt = 'ИСТОРИЯ ПЕРЕМЕЩЕНИЙ:\n\n';
     locHistory.slice(-10).forEach((h, i) => txt += `${i+1}. ${h.t} — X:${h.x} Y:${h.y}\n`);
+    playModalSound();
     alert(txt);
     flashGlitch();
 }
@@ -2380,7 +2644,7 @@ function showInfo(type) {
     document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
     const t = document.getElementById(type + 'Info');
     if (t) t.style.display = 'block';
-    playBeep();
+    playClickSound();
     flashGlitch();
 }
 
@@ -2388,7 +2652,7 @@ function changeInfo(type) {
     document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
     const t = document.getElementById(type + 'Info');
     if (t) t.style.display = 'block';
-    playBeep();
+    playClickSound();
 }
 
 function updateStatus() {
@@ -2396,7 +2660,7 @@ function updateStatus() {
     const task = document.getElementById('taskTxt');
     if (loc) loc.textContent = 'ERES-427 · ROTFRONT';
     if (task) task.textContent = 'ПРОФИЛАКТИЧЕСКИЙ ОБХОД';
-    playBeep();
+    playClickSound();
     flashGlitch();
 }
 
@@ -2404,13 +2668,13 @@ function updateStatus() {
    ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ
 ============================================================ */
 function combatReady() {
-    playBeep();
     if (combatReadyActive) {
         if (confirm('◈ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ УЖЕ АКТИВЕН.\n\nСнять режим и вернуться в штатный?')) {
             deactivateCombat();
         }
         return;
     }
+    playAlarmSound();
     if (confirm('⚔ АКТИВИРОВАТЬ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ?\n\nМодуль будет переведён в режим повышенной готовности.\nЛазаретный режим приостановлен, сенсоры активны.')) {
         activateCombat();
     }
@@ -2423,11 +2687,12 @@ function activateCombat() {
     stateTxt.innerHTML = '<span style="color: var(--amber)">БОЕВАЯ ГОТОВНОСТЬ · АКТИВНА</span>';
     led.className = 'led amber';
 
-    playBeep();
     flashGlitch();
     shakeScreen();
 
     addEvent('◈ Протокол боевой готовности активирован');
+
+    setTimeout(() => playAlarmSound(), 400);
 
     let n = 0;
     const int = setInterval(() => {
@@ -2443,7 +2708,7 @@ function deactivateCombat() {
     const led = document.getElementById('stateLed');
     stateTxt.textContent = 'STABIL · BEREIT';
     led.className = 'led';
-    playBeep();
+    playModalSound();
     addEvent('◈ Протокол боевой готовности снят · штатный режим');
 }
 
@@ -2452,18 +2717,17 @@ function deactivateCombat() {
 ============================================================ */
 function openModal(id) {
     document.getElementById(id).classList.add('on');
-    playBeep();
+    playModalSound();
 }
 function closeModal(id) {
     document.getElementById(id).classList.remove('on');
-    playBeep();
+    playClickSound();
 }
 
 /* ============================================================
    БРИФИНГ — ВИДЕО
 ============================================================ */
 function playBriefing() {
-    /* Приглушаем фоновую музыку, чтобы не мешала видео */
     const audio = document.getElementById('bgMusic');
     if (audio) {
         audio.dataset.prevVolume = audio.volume;
@@ -2492,7 +2756,6 @@ function closeBriefing() {
         try { vid.pause(); } catch (e) {}
     }
 
-    /* Восстанавливаем громкость музыки */
     const audio = document.getElementById('bgMusic');
     if (audio && audio.dataset.prevVolume !== undefined) {
         audio.volume = parseFloat(audio.dataset.prevVolume) || bgVolume;
@@ -2633,9 +2896,10 @@ function tryUnlockPsychFromConsole() {
         const sd = document.getElementById('statPsychDesc');
         if (sd) sd.textContent = 'НОМИНАЛЬНО';
 
-        playBeep();
+        playModalSound();
         renderConsole();
     } else {
+        playErrorSound();
         alert('◈ ДОСТУП ЗАПРЕЩЁН\n\nНеверный код. Инцидент зафиксирован.');
         flashGlitch();
         shakeScreen();
@@ -2648,7 +2912,7 @@ function refreshLoc() {
     document.getElementById('cSec').textContent = l.sec;
     document.getElementById('cPatrol').textContent = l.status;
     document.getElementById('cLocTime').textContent = new Date().toLocaleTimeString();
-    playBeep();
+    playClickSound();
 }
 function refreshMed() {
     document.getElementById('cHR').textContent = Math.floor(Math.random()*20)+65;
@@ -2656,7 +2920,7 @@ function refreshMed() {
     document.getElementById('cT').textContent = (36.5 + Math.random()*0.5).toFixed(1);
     document.getElementById('cO2').textContent = (Math.floor(Math.random()*3)+97) + '%';
     document.getElementById('cMedTime').textContent = new Date().toLocaleTimeString();
-    playBeep();
+    playClickSound();
 }
 function refreshPsych() {
     if (!psychUnlocked) return;
@@ -2674,18 +2938,17 @@ function refreshPsych() {
     if (ev) { ev.textContent = e + '%'; eb.style.width = e + '%'; }
     const pt = document.getElementById('cPsychTime');
     if (pt) pt.textContent = new Date().toLocaleTimeString();
-    playBeep();
+    playClickSound();
 }
 function refreshMissions() {
     document.getElementById('cMisTime').textContent = new Date().toLocaleTimeString();
-    playBeep();
+    playClickSound();
 }
 function refreshAll() {
     refreshLoc();
     refreshMed();
     refreshPsych();
     refreshMissions();
-    playBeep();
 }
 
 /* ============================================================
@@ -2709,10 +2972,8 @@ document.addEventListener('DOMContentLoaded', () => {
         s.addEventListener('click', e => e.preventDefault());
     });
 
-    /* Инициализация регулятора громкости */
     applyVolumeUI();
 
-    /* Колесо мыши над слайдером = плавное изменение громкости */
     const slider = document.getElementById('volumeSlider');
     if (slider) {
         slider.addEventListener('wheel', (e) => {
@@ -2725,7 +2986,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: false });
     }
 
-    /* Клавиша Esc закрывает модальные окна */
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const bm = document.getElementById('briefingModal');
@@ -2735,7 +2995,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: гарантированно останавливаем видео при загрузке страницы */
     const vid = document.getElementById('briefingVideo');
     if (vid) {
         try {
@@ -2743,6 +3002,15 @@ document.addEventListener('DOMContentLoaded', () => {
             vid.currentTime = 0;
         } catch (e) {}
     }
+
+    /* Разблокировка AudioContext на первый клик */
+    const unlockAudio = () => {
+        getAudioCtx();
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+    };
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
 });
 </script>
 </body>
