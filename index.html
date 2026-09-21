@@ -1830,10 +1830,6 @@
     </div>
 </div>
 
-<audio id="beep" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
-</audio>
-
 <script>
 /* ============================================================
    STATE
@@ -1848,7 +1844,7 @@ let combatReadyActive = false;
 let musicStarted = false;
 
 /* Громкость */
-let bgVolume = 0.8;   // 0.0 … 1.0
+let bgVolume = 0.8;
 let bgMuted = false;
 
 const locationsPool = [
@@ -1871,7 +1867,173 @@ const psychPool = [
 ];
 
 /* ============================================================
-   ЗВУК ОТКРЫТИЯ ФАЙЛА — Signalis-style (Web Audio API)
+   ЗВУК КЛИКА — низкий, грубый, механический
+============================================================ */
+let lastBeepTime = 0;
+function playBeep() {
+    const t = Date.now();
+    if (t - lastBeepTime < 40) return;
+    lastBeepTime = t;
+
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // 1) Резкий низкий "кланк" — sawtooth 720 → 140 Гц
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.045);
+        gain.gain.setValueAtTime(0.055, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+
+        // 2) Механический "тук" — square 190 → 85 Гц
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(190, now + 0.006);
+        osc2.frequency.exponentialRampToValueAtTime(85, now + 0.055);
+        gain2.gain.setValueAtTime(0.048, now + 0.006);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.006);
+        osc2.stop(now + 0.08);
+
+        // 3) Шумовой треск
+        const noiseDur = 0.035;
+        const bufSize = Math.floor(ctx.sampleRate * noiseDur);
+        const noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 2);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.045, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseDur);
+        const hp = ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 700;
+        hp.Q.value = 0.7;
+        noise.connect(hp);
+        hp.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now);
+        noise.stop(now + noiseDur);
+
+        setTimeout(() => { try { ctx.close(); } catch(e) {} }, 220);
+    } catch(e) {}
+}
+
+/* ============================================================
+   СИРЕНА БОЕВОЙ ТРЕВОГИ — низкая, грубая, трёхслойная
+============================================================ */
+let sirenCtx = null;
+let sirenOsc = null;
+let sirenOsc2 = null;
+let sirenOsc3 = null;
+let sirenLfo = null;
+let sirenGain = null;
+let sirenPlaying = false;
+
+function startSiren() {
+    if (sirenPlaying) return;
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+
+        sirenCtx = new AudioCtx();
+        const t0 = sirenCtx.currentTime;
+
+        sirenOsc = sirenCtx.createOscillator();
+        sirenOsc.type = 'sawtooth';
+        sirenOsc.frequency.setValueAtTime(220, t0);
+
+        sirenOsc2 = sirenCtx.createOscillator();
+        sirenOsc2.type = 'square';
+        sirenOsc2.frequency.setValueAtTime(110, t0);
+
+        sirenOsc3 = sirenCtx.createOscillator();
+        sirenOsc3.type = 'sawtooth';
+        sirenOsc3.frequency.setValueAtTime(224, t0);
+
+        sirenLfo = sirenCtx.createOscillator();
+        sirenLfo.type = 'sine';
+        sirenLfo.frequency.setValueAtTime(0.45, t0);
+
+        const lfoGain = sirenCtx.createGain();
+        lfoGain.gain.setValueAtTime(90, t0);
+
+        sirenLfo.connect(lfoGain);
+        lfoGain.connect(sirenOsc.frequency);
+        lfoGain.connect(sirenOsc2.frequency);
+        lfoGain.connect(sirenOsc3.frequency);
+
+        const filter = sirenCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 900;
+        filter.Q.value = 1.5;
+
+        sirenGain = sirenCtx.createGain();
+        sirenGain.gain.setValueAtTime(0, t0);
+        sirenGain.gain.linearRampToValueAtTime(0.11, t0 + 0.5);
+
+        sirenOsc.connect(filter);
+        sirenOsc2.connect(filter);
+        sirenOsc3.connect(filter);
+        filter.connect(sirenGain);
+        sirenGain.connect(sirenCtx.destination);
+
+        sirenOsc.start();
+        sirenOsc2.start();
+        sirenOsc3.start();
+        sirenLfo.start();
+        sirenPlaying = true;
+    } catch(e) {
+        console.warn('Сирена не запущена:', e);
+    }
+}
+
+function stopSiren() {
+    if (!sirenPlaying || !sirenCtx) return;
+    try {
+        const t = sirenCtx.currentTime;
+        sirenGain.gain.cancelScheduledValues(t);
+        sirenGain.gain.setValueAtTime(sirenGain.gain.value, t);
+        sirenGain.gain.linearRampToValueAtTime(0.0001, t + 0.45);
+
+        setTimeout(() => {
+            try {
+                if (sirenOsc)  sirenOsc.stop();
+                if (sirenOsc2) sirenOsc2.stop();
+                if (sirenOsc3) sirenOsc3.stop();
+                if (sirenLfo)  sirenLfo.stop();
+                if (sirenCtx)  sirenCtx.close();
+            } catch(e) {}
+            sirenOsc = null;
+            sirenOsc2 = null;
+            sirenOsc3 = null;
+            sirenLfo = null;
+            sirenGain = null;
+            sirenCtx = null;
+            sirenPlaying = false;
+        }, 550);
+    } catch(e) {
+        sirenPlaying = false;
+    }
+}
+
+/* ============================================================
+   ЗВУК ОТКРЫТИЯ ФАЙЛА — Signalis-style
 ============================================================ */
 function playTone(ctx, time, freq, duration, vol, type) {
     const osc = ctx.createOscillator();
@@ -2080,16 +2242,10 @@ function checkPw() {
     if (input.value.toUpperCase().trim() === ACCESS_CODE) {
         warn.classList.remove('on');
 
-        // 0) Звук открытия файла (Signalis-style)
         playFileOpenSound();
-
-        // 1) GIF на весь экран
         playGifTransition();
-
-        // 2) Музыка
         startBgMusic();
 
-        // 3) Через 3 сек скрываем boot-экран, показываем shell и убираем GIF
         setTimeout(() => {
             boot.classList.add('hidden');
             setTimeout(() => boot.style.display = 'none', 400);
@@ -2141,14 +2297,6 @@ function tryUnlockPsych() {
         flashGlitch();
         shakeScreen();
     }
-}
-
-function playBeep() {
-    try {
-        const b = document.getElementById('beep');
-        b.currentTime = 0;
-        b.play();
-    } catch(e) {}
 }
 
 /* ============================================================
@@ -2204,17 +2352,18 @@ function initTimeline() {
 }
 
 function addTl() {
+    playBeep();
     const date  = prompt('Дата (ГГГГ-ММ-ДД):', '2157-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0'));
     const title = prompt('Название:', 'Новое вмешательство');
     const desc  = prompt('Описание:', 'Вмешательство завершено успешно');
     if (date && title && desc) {
         tlEvents.push({ date, title, desc, high: false });
         initTimeline();
-        playBeep();
     }
 }
 
 function exportTl() {
+    playBeep();
     let txt = 'ХРОНОЛОГИЯ HABR-RF5-112\n\n';
     tlEvents.forEach(e => txt += `${e.date} — ${e.title}\n${e.desc}\n\n`);
     const blob = new Blob([txt], { type: 'text/plain' });
@@ -2226,6 +2375,7 @@ function exportTl() {
 }
 
 function showEvent(i) {
+    playBeep();
     const e = tlEvents[i];
     alert(`${e.date}\n\n${e.title}\n\n${e.desc}`);
     flashGlitch();
@@ -2295,6 +2445,7 @@ function drawDot() {
 }
 
 function moveUnit() {
+    playBeep();
     const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
     const d = dirs[Math.floor(Math.random() * dirs.length)];
     opPos.x = Math.max(0, Math.min(9, opPos.x + d.x));
@@ -2303,7 +2454,6 @@ function moveUnit() {
     updPosInfo();
     addEvent(`Перемещение · X:${opPos.x} · Y:${opPos.y}`);
     locHistory.push({ t: new Date().toLocaleTimeString(), x: opPos.x, y: opPos.y });
-    playBeep();
     if (Math.random() > 0.5) flashGlitch();
 }
 
@@ -2335,6 +2485,7 @@ function addEvent(txt) {
 }
 
 function showHistory() {
+    playBeep();
     let txt = 'ИСТОРИЯ ПЕРЕМЕЩЕНИЙ:\n\n';
     locHistory.slice(-10).forEach((h, i) => txt += `${i+1}. ${h.t} — X:${h.x} Y:${h.y}\n`);
     alert(txt);
@@ -2345,28 +2496,28 @@ function showHistory() {
    OVERVIEW
 ============================================================ */
 function showInfo(type) {
+    playBeep();
     const block = document.getElementById('infoBlock');
     block.style.display = 'block';
     document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
     const t = document.getElementById(type + 'Info');
     if (t) t.style.display = 'block';
-    playBeep();
     flashGlitch();
 }
 
 function changeInfo(type) {
+    playBeep();
     document.querySelectorAll('#infoBlock > div[id$="Info"]').forEach(d => d.style.display = 'none');
     const t = document.getElementById(type + 'Info');
     if (t) t.style.display = 'block';
-    playBeep();
 }
 
 function updateStatus() {
+    playBeep();
     const loc = document.getElementById('posTxt');
     const task = document.getElementById('taskTxt');
     if (loc) loc.textContent = 'ERES-427 · ROTFRONT';
     if (task) task.textContent = 'ПРОФИЛАКТИЧЕСКИЙ ОБХОД';
-    playBeep();
     flashGlitch();
 }
 
@@ -2388,16 +2539,39 @@ function combatReady() {
 
 function activateCombat() {
     combatReadyActive = true;
+
     const stateTxt = document.getElementById('stateTxt');
     const led = document.getElementById('stateLed');
     stateTxt.innerHTML = '<span style="color: var(--amber)">БОЕВАЯ ГОТОВНОСТЬ · АКТИВНА</span>';
     led.className = 'led amber';
 
+    const audio = document.getElementById('bgMusic');
+    if (audio) {
+        try {
+            let v = audio.volume;
+            const fade = setInterval(() => {
+                v -= 0.08;
+                if (v <= 0) {
+                    v = 0;
+                    audio.pause();
+                    audio.volume = bgMuted ? 0 : bgVolume;
+                    clearInterval(fade);
+                } else {
+                    audio.volume = v;
+                }
+            }, 40);
+        } catch(e) {
+            audio.pause();
+        }
+    }
+
+    startSiren();
+
     playBeep();
     flashGlitch();
     shakeScreen();
 
-    addEvent('◈ Протокол боевой готовности активирован');
+    addEvent('◈ Протокол боевой готовности активирован · SIRENE AN');
 
     let n = 0;
     const int = setInterval(() => {
@@ -2409,30 +2583,43 @@ function activateCombat() {
 
 function deactivateCombat() {
     combatReadyActive = false;
+
     const stateTxt = document.getElementById('stateTxt');
     const led = document.getElementById('stateLed');
     stateTxt.textContent = 'STABIL · BEREIT';
     led.className = 'led';
+
+    stopSiren();
+
+    const audio = document.getElementById('bgMusic');
+    if (audio && musicStarted) {
+        try {
+            audio.volume = bgMuted ? 0 : bgVolume;
+            audio.play().catch(() => {});
+        } catch(e) {}
+    }
+
     playBeep();
-    addEvent('◈ Протокол боевой готовности снят · штатный режим');
+    addEvent('◈ Протокол боевой готовности снят · штатный режим · SIRENE AUS');
 }
 
 /* ============================================================
    MODALS
 ============================================================ */
 function openModal(id) {
-    document.getElementById(id).classList.add('on');
     playBeep();
+    document.getElementById(id).classList.add('on');
 }
 function closeModal(id) {
-    document.getElementById(id).classList.remove('on');
     playBeep();
+    document.getElementById(id).classList.remove('on');
 }
 
 /* ============================================================
    OPERATIVE CONSOLE
 ============================================================ */
 function openConsole() {
+    playBeep();
     renderConsole();
     openModal('consoleModal');
 }
@@ -2568,23 +2755,24 @@ function tryUnlockPsychFromConsole() {
 }
 
 function refreshLoc() {
+    playBeep();
     const l = locationsPool[Math.floor(Math.random() * locationsPool.length)];
     document.getElementById('cObj').textContent = 'ERES-427';
     document.getElementById('cSec').textContent = l.sec;
     document.getElementById('cPatrol').textContent = l.status;
     document.getElementById('cLocTime').textContent = new Date().toLocaleTimeString();
-    playBeep();
 }
 function refreshMed() {
+    playBeep();
     document.getElementById('cHR').textContent = Math.floor(Math.random()*20)+65;
     document.getElementById('cBP').textContent = `${Math.floor(Math.random()*20)+110}/${Math.floor(Math.random()*10)+70}`;
     document.getElementById('cT').textContent = (36.5 + Math.random()*0.5).toFixed(1);
     document.getElementById('cO2').textContent = (Math.floor(Math.random()*3)+97) + '%';
     document.getElementById('cMedTime').textContent = new Date().toLocaleTimeString();
-    playBeep();
 }
 function refreshPsych() {
     if (!psychUnlocked) return;
+    playBeep();
     const s = Math.floor(Math.random()*11)+85;
     const c = Math.floor(Math.random()*11)+85;
     const e = Math.floor(Math.random()*11)+80;
@@ -2599,22 +2787,21 @@ function refreshPsych() {
     if (ev) { ev.textContent = e + '%'; eb.style.width = e + '%'; }
     const pt = document.getElementById('cPsychTime');
     if (pt) pt.textContent = new Date().toLocaleTimeString();
-    playBeep();
 }
 function refreshMissions() {
-    document.getElementById('cMisTime').textContent = new Date().toLocaleTimeString();
     playBeep();
+    document.getElementById('cMisTime').textContent = new Date().toLocaleTimeString();
 }
 function refreshAll() {
+    playBeep();
     refreshLoc();
     refreshMed();
     refreshPsych();
     refreshMissions();
-    playBeep();
 }
 
 /* ============================================================
-   INIT + ЗАЩИТА ОТ РЕДАКТИРОВАНИЯ
+   INIT + ГЛОБАЛЬНЫЙ ЗВУК КЛИКОВ + ЗАЩИТА ОТ РЕДАКТИРОВАНИЯ
 ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'})));
@@ -2634,10 +2821,8 @@ document.addEventListener('DOMContentLoaded', () => {
         s.addEventListener('click', e => e.preventDefault());
     });
 
-    /* Инициализация регулятора громкости */
     applyVolumeUI();
 
-    /* Колесо мыши над слайдером = плавное изменение громкости */
     const slider = document.getElementById('volumeSlider');
     if (slider) {
         slider.addEventListener('wheel', (e) => {
@@ -2649,6 +2834,16 @@ document.addEventListener('DOMContentLoaded', () => {
             onVolumeChange(newVal);
         }, { passive: false });
     }
+
+    document.addEventListener('click', (e) => {
+        const interactive = e.target.closest('.btn, .tab, .modal-x, .vol-icon, .stat, .ident-sigil');
+        if (!interactive) return;
+
+        const boot = document.getElementById('bootScreen');
+        if (boot && !boot.classList.contains('hidden')) return;
+
+        playBeep();
+    });
 });
 </script>
 </body>
