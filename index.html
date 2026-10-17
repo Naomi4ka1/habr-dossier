@@ -715,17 +715,17 @@
         <h2 class="sec-title"><span class="deco">◆</span>ОПЕРАТИВНАЯ СТАТИСТИКА</h2>
         <div class="sec-sub">Всего вмешательств · Коэффициент успеха · Распределение</div>
         <div class="grid-4">
-            <div class="stat"><div class="stat-label">ЛАЗАРЕТНЫХ ОПЕРАЦИЙ</div><div class="stat-val">128</div><div class="stat-desc">ПОДТВЕРЖДЕНО</div></div>
-            <div class="stat"><div class="stat-label">ПОЛЕВЫХ ВМЕШАТЕЛЬСТВ</div><div class="stat-val">14</div><div class="stat-desc">ЗА ВЕСЬ ПЕРИОД</div></div>
-            <div class="stat"><div class="stat-label">КОЭФФИЦИЕНТ</div><div class="stat-val">94%</div><div class="stat-desc">ЭФФЕКТИВНОСТЬ</div></div>
-            <div class="stat"><div class="stat-label">ЦИКЛОВ СЛУЖБЫ</div><div class="stat-val">2</div><div class="stat-desc">ГОДА С 2155</div></div>
+            <div class="stat"><div class="stat-label">ЛАЗАРЕТНЫХ ОПЕРАЦИЙ</div><div class="stat-val">0</div><div class="stat-desc">ПОДТВЕРЖДЕНО</div></div>
+            <div class="stat"><div class="stat-label">ПОЛЕВЫХ ВМЕШАТЕЛЬСТВ</div><div class="stat-val">0</div><div class="stat-desc">ЗА ВЕСЬ ПЕРИОД</div></div>
+            <div class="stat"><div class="stat-label">КОЭФФИЦИЕНТ</div><div class="stat-val">0%</div><div class="stat-desc">ЭФФЕКТИВНОСТЬ</div></div>
+            <div class="stat"><div class="stat-label">ЦИКЛОВ СЛУЖБЫ</div><div class="stat-val">730</div><div class="stat-desc">ДНЕЙ С 2155</div></div>
         </div>
         <h3 style="font-family: 'VT323', monospace; color: var(--amber); letter-spacing: 0.15em; margin-top: 34px; text-transform: uppercase;">◈ РАСПРЕДЕЛЕНИЕ ПО ТИПАМ ВМЕШАТЕЛЬСТВ</h3>
         <div class="chart" id="chartBox"></div>
         <div class="grid-3" style="margin-top: 20px;">
-            <div class="panel"><h4>ПО ТИПАМ</h4><p>Лазаретная хирургия: 128</p><p>Стабилизация: 42</p><p>Ампутации: 18</p><p>Полевые: 14</p></div>
-            <div class="panel"><h4>ПО СЕКТОРАМ</h4><p>S-6 GAMMA: 48</p><p>S-1 ALPHA: 41</p><p>S-11 DELTA: 33</p><p>S-14 BETA: 25</p></div>
-            <div class="panel"><h4>СОВМЕСТНО</h4><p>С HABR-группами: 61</p><p>С ГБР: 18</p><p>С КОМАНДОВАНИЕМ: 8</p><p>Автономно: 14</p></div>
+            <div class="panel"><h4>ПО ТИПАМ</h4><p>Лазаретная хирургия: 0</p><p>Стабилизация: 0</p><p>Ампутации: 0</p><p>Полевые: 0</p></div>
+            <div class="panel"><h4>ПО СЕКТОРАМ</h4><p>S-6 GAMMA: 0</p><p>S-1 ALPHA: 0</p><p>S-11 DELTA: 0</p><p>S-14 BETA: 0</p></div>
+            <div class="panel"><h4>СОВМЕСТНО</h4><p>С HABR-группами: 0</p><p>С ГБР: 0</p><p>С КОМАНДОВАНИЕМ: 0</p><p>Автономно: 0</p></div>
         </div>
     </div>
 
@@ -895,7 +895,7 @@ function synthSweep(freqStart, freqEnd, duration, vol, type, delay) {
     osc.start(t); osc.stop(t + duration + 0.05);
 }
 
-/* Щелчок вкладки — глухой, не режущий */
+/* Щелчок вкладки — глухой */
 function playClickSound() {
     const ctx = getAudioCtx(); if (!ctx) return;
     const t = ctx.currentTime;
@@ -927,7 +927,7 @@ function playClickSound() {
     osc.start(t); osc.stop(t + 0.13);
 }
 
-/* Клик модальных окон / хронологии — глухой низкий */
+/* Клик модальных окон — глухой низкий */
 function playModalSound() {
     const ctx = getAudioCtx(); if (!ctx) return;
     const t = ctx.currentTime;
@@ -959,7 +959,7 @@ function playModalSound() {
     o2.start(t); o2.stop(t + 0.18);
 }
 
-/* Тревога — низкая, угрожающая */
+/* Тревога */
 function playAlarmSound() {
     const ctx = getAudioCtx(); if (!ctx) return;
     const now = ctx.currentTime;
@@ -1027,7 +1027,7 @@ function playAlarmSound() {
     hit.start(finalT); hit.stop(finalT + 0.7);
 }
 
-/* Ошибка — жёсткие удары + рычание */
+/* Ошибка */
 function playErrorSound() {
     const ctx = getAudioCtx(); if (!ctx) return;
     const now = ctx.currentTime;
@@ -1268,7 +1268,6 @@ function initTimeline() {
         { date: '2155-12-26', title: 'АКТИВАЦИЯ КАК HABR', desc: 'Формирование нейропаттерна HABR-RF5-112. Присвоен серийный номер HABR-R632-112GAMMA CENTAVRA.', high: false },
         { date: '2156-03-15', title: 'ПЕРВОЕ КРУПНОЕ ВМЕШАТЕЛЬСТВО', desc: 'Массовая стабилизация пациентов в учебном лазарете медицинского корпуса. 24 спасённых жизни за 6 часов.', high: true },
         { date: '2156-07-22', title: 'СЛОЖНОЕ ХИРУРГИЧЕСКОЕ ВМЕШАТЕЛЬСТВО', desc: 'Первая самостоятельная операция повышенной сложности. Успешное завершение, благодарность от куратора.', high: false },
-        { date: '2156-11-08', title: 'ПЛАНОВАЯ ПРОВЕРКА KAHR', desc: 'Успешное прохождение инспекции KAHR без замечаний. Показатели целостности слепка — в норме.', high: false },
         { date: '2157-01-19', title: 'ПОДТВЕРЖДЕНИЕ MED-I', desc: 'Присвоен уровень доступа MED-I после серии безупречных вмешательств.', high: true },
         { date: '2157-03-05', title: 'ПРИПИСАН К ERES-427', desc: 'Переведён на постоянное назначение в лазаретный корпус ERES-427. Начало службы на объекте.', high: true }
     ];
@@ -1309,12 +1308,12 @@ function initStats() {
     const box = document.getElementById('chartBox');
     box.innerHTML = '';
     const data = [
-        { l: 'Лазарет', v: 128, c: '#c8912c' },
-        { l: 'Стабилиз.', v: 42, c: '#a82a2a' },
-        { l: 'Ампутации', v: 18, c: '#7a5a18' },
-        { l: 'Полевые', v: 14, c: '#6d8a5e' }
+        { l: 'Лазарет', v: 0, c: '#c8912c' },
+        { l: 'Стабилиз.', v: 0, c: '#a82a2a' },
+        { l: 'Ампутации', v: 0, c: '#7a5a18' },
+        { l: 'Полевые', v: 0, c: '#6d8a5e' }
     ];
-    const max = Math.max(...data.map(d => d.v));
+    const max = Math.max(...data.map(d => d.v)) || 1;
     data.forEach((d, i) => {
         const wrap = document.createElement('div');
         const bar = document.createElement('div');
@@ -1418,7 +1417,7 @@ function updateStatus() {
     playClickSound(); flashGlitch();
 }
 
-/* БОЕВАЯ ГОТОВНОСТЬ — сирена ТОЛЬКО после подтверждения */
+/* БОЕВАЯ ГОТОВНОСТЬ */
 function combatReady() {
     if (combatReadyActive) {
         if (confirm('◈ ПРОТОКОЛ БОЕВОЙ ГОТОВНОСТИ УЖЕ АКТИВЕН.\n\nСнять режим и вернуться в штатный?')) {
